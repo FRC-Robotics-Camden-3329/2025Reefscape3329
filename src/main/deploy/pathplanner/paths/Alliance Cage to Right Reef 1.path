@@ -8,28 +8,42 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.556477510036174,
-        "y": 5.941370946883187
+        "x": 6.748323675496689,
+        "y": 6.0952607615894046
       },
       "isLocked": false,
       "linkedName": "Alliance Cage"
     },
     {
       "anchor": {
-        "x": 5.1553125,
-        "y": 5.246519886363636
+        "x": 5.23162172110721,
+        "y": 5.375272519349449
       },
       "prevControl": {
-        "x": 5.398242318208261,
-        "y": 5.310220049966708
+        "x": 5.696522383358865,
+        "y": 6.406770863720309
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Right Reef 1"
     }
   ],
   "rotationTargets": [],
-  "constraintZones": [],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0.8000000000000049,
+      "maxWaypointRelativePos": 1.0,
+      "constraints": {
+        "maxVelocity": 1.5,
+        "maxAcceleration": 1.5,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
@@ -41,7 +55,7 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0,
+    "velocity": 0.0,
     "rotation": 59.99999999999999
   },
   "reversed": false,

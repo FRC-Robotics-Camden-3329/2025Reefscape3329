@@ -20,8 +20,8 @@ public final class Constants {
     public static final double L4 = 43.05 - 0.7 + 0.35 - 1.4 + 0.7 + 0.35;
     public static final double A1 = 24.261 - 0.7 - 1.4;
     public static final double A2 = 37.404 - 0.7 - 1.4;
-    public static final double P = 5.881;
-    public static final double CS = 2.75;
+    public static final double P = 5.881 + 1.4;
+    public static final double CS = 2.75 + 0.35;
   }
 
   public static class CoralConstants {
@@ -39,9 +39,9 @@ public final class Constants {
     public static final double L2 = 0.025;
     public static final double L3 = 0.025;
     public static final double L4 = -0.025;
-    public static final double A1 = 0.25;
-    public static final double A2 = 0.25;
-    public static final double P = 0.25;
+    public static final double A1 = 0.23;
+    public static final double A2 = 0.23;
+    public static final double P = 0.23;
     public static final double CS = 0.165;
   }
 
@@ -67,16 +67,21 @@ public final class Constants {
     public static final double CS = 0.233;
   }
 
-  public static class VisionConstants{
-    public static final double forwardP = 4;
+  /*public static class VisionConstants{
+    public static final double forwardP = 1.5;
     public static final double forwardI = 0;
-    public static final double forwardD = 0;
-    public static final double strafeP = 0;
+    public static final double forwardD = 0.5;
+    public static final double strafeP = 1;
     public static final double strafeI = 0;
-    public static final double strafeD = 0;
+    public static final double strafeD = 0.8;
     public static final double turnP = 0.02;
     public static final double turnI = 0;
     public static final double turnD = 0.004 / 10;
+  }*/
+
+  public static class ClimbConstants{
+    public static final int motorID = 19;
+    public static final double speed = 0.8;
   }
   
   public static final double maxSpeed = Units.feetToMeters(10);

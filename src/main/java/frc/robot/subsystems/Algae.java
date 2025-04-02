@@ -64,7 +64,9 @@ public class Algae extends SubsystemBase {
             () -> this.runIntake(Constants.AlgaeConstants.intakeSpeed),
             () -> {
             this.runIntake(Constants.AlgaeConstants.holdSpeed);
-            elevator.moveElevatorCommand(elevator.getEncoderPosition() + 1.4);
+            if (getEncoderPosition() > -0.05 && getEncoderPosition() < 0.05) {
+                elevator.moveElevatorCommand(elevator.getEncoderPosition() + 1.4);
+            }
             //moveAlgaeCommand(getEncoderPosition() + 0.05);
             }
         );

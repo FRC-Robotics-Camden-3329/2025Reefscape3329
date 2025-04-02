@@ -5,28 +5,15 @@
     "data": {
       "commands": [
         {
-          "type": "parallel",
+          "type": "named",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Anchor to Right Reef 2"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "L3Config"
-                }
-              }
-            ]
+            "name": "L2Config"
           }
         },
         {
-          "type": "named",
+          "type": "path",
           "data": {
-            "name": "EjectCoral"
+            "pathName": "Opponent Cage to Left Reef 3"
           }
         },
         {
@@ -38,7 +25,7 @@
         {
           "type": "named",
           "data": {
-            "name": "StopCoral"
+            "name": "EjectCoral"
           }
         }
       ]

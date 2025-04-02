@@ -18,6 +18,7 @@ public class RobotContainer {
   private Elevator m_Elevator = new Elevator();
   private Coral m_Coral = new Coral();
   private Algae m_Algae = new Algae(m_Elevator);
+  private Climb m_Climb = new Climb();
   public final CommandXboxController m_driverController = new CommandXboxController(OperatorConstants.kDriverControllerPort);
   public final CommandXboxController m_operatorController = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
   public double forward = 0;
@@ -25,17 +26,18 @@ public class RobotContainer {
   public double turn = 0;
 
   public RobotContainer() {
-    autoChooser = AutoBuilder.buildAutoChooser();
-    SmartDashboard.putData("Auto Chooser", autoChooser);
-    NamedCommands.registerCommand("L3Config", new L3Config(m_Elevator, m_Coral, m_Algae));
+    NamedCommands.registerCommand("L2Config", new L2Config(m_Elevator, m_Coral, m_Algae));
+    NamedCommands.registerCommand("L4Config", new L4Config(m_Elevator, m_Coral, m_Algae));
     NamedCommands.registerCommand("CSConfig", new CSConfig(m_Elevator, m_Coral, m_Algae));
     NamedCommands.registerCommand("IntakeCoral", m_Coral.intakeCoralCommand());
     NamedCommands.registerCommand("EjectCoral", m_Coral.ejectCoralCommand());
     NamedCommands.registerCommand("StopCoral", m_Coral.stopCoralCommand());
     setMotorBrake(true);
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
-    configureBindings();
+    autoChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("Auto Chooser", autoChooser);
     autoChooser.setDefaultOption("None", null);
+    configureBindings();
   }
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(), () -> forward, () -> strafe)
@@ -60,6 +62,9 @@ public class RobotContainer {
     m_operatorController.rightTrigger().whileTrue(m_Algae.ejectAlgaeCommand());
 
     m_driverController.x().onTrue(drivebase.zeroGyro());
+
+    m_driverController.povUp().whileTrue(m_Climb.climbCommand());
+    m_driverController.povDown().whileTrue(m_Climb.reachCommand());
   }
 
   public void setMotorBrake(boolean brake) {

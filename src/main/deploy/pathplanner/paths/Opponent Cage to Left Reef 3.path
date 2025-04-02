@@ -3,33 +3,47 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 5.718613868445012,
-        "y": 4.184037698296969
+        "x": 7.57840909090909,
+        "y": 1.9
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.44085818662684,
-        "y": 4.044435425569696
+        "x": 5.554176136363637,
+        "y": 2.7037642045454553
       },
       "isLocked": false,
-      "linkedName": "Right Reef 2"
+      "linkedName": "Opponent Cage"
     },
     {
       "anchor": {
-        "x": 1.1092940063870198,
-        "y": 7.057969563049213
+        "x": 4.871873541815797,
+        "y": 2.819079509385856
       },
       "prevControl": {
-        "x": 6.414180370023384,
-        "y": 6.320071835776486
+        "x": 5.414573863636364,
+        "y": 1.6966335227272737
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Left Coral"
+      "linkedName": "Left Reef 3"
     }
   ],
   "rotationTargets": [],
-  "constraintZones": [],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0.8000000000000028,
+      "maxWaypointRelativePos": 1.0,
+      "constraints": {
+        "maxVelocity": 1.5,
+        "maxAcceleration": 1.5,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
@@ -42,7 +56,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -55.0
+    "rotation": -59.99999999999999
   },
   "reversed": false,
   "folder": null,

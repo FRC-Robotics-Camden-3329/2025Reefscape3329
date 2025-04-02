@@ -1,24 +1,25 @@
 package frc.robot;
 
-import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonUtils;
-import org.photonvision.targeting.PhotonTrackedTarget;
+//import org.photonvision.PhotonCamera;
+//import org.photonvision.PhotonUtils;
+//import org.photonvision.targeting.PhotonTrackedTarget;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.util.Units;
+//import edu.wpi.first.math.controller.PIDController;
+//import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+//import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
   private final RobotContainer m_robotContainer;
-  private PhotonCamera camera;
-  private double forward, strafe, turn, targetYaw, targetDistance, yawDifference;
-  private static PIDController forwardPID, strafePID, turnPID;
-  private static boolean targetVisible;
-  private static PhotonTrackedTarget tag;
+  //private PhotonCamera camera;
+  private double forward, strafe, turn; 
+  //private double targetYaw, targetDistance, strafeComp;
+  //private static PIDController forwardPID, strafePID, turnPID;
+  //private static boolean targetVisible;
+  //private static PhotonTrackedTarget tag;
 
   public Robot() {
     m_robotContainer = new RobotContainer();
@@ -26,7 +27,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
-    camera = new PhotonCamera("Orange Camera");
+    //camera = new PhotonCamera("Orange Camera");
   }
 
   @Override
@@ -54,7 +55,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    turnPID = new PIDController(Constants.VisionConstants.turnP,
+    /*turnPID = new PIDController(Constants.VisionConstants.turnP,
                                 Constants.VisionConstants.turnI,
                                 Constants.VisionConstants.turnD);
     forwardPID = new PIDController(Constants.VisionConstants.forwardP, 
@@ -65,7 +66,7 @@ public class Robot extends TimedRobot {
                                   Constants.VisionConstants.strafeD);
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
-    }
+    }*/
   }
 
   @Override
@@ -73,25 +74,32 @@ public class Robot extends TimedRobot {
     forward = m_robotContainer.m_driverController.getLeftY();
     strafe = m_robotContainer.m_driverController.getLeftX();
     turn = m_robotContainer.m_driverController.getRightX();
-    getVisionData();
-    /*if(m_robotContainer.m_driverController.povLeft().getAsBoolean() && targetVisible){
-      runTurn(0);
-      runForwardOffsets(runForward(0.5), runStrafe(0));
-      runStrafeOffsets(runForward(0.5), runStrafe(0));
-    }*/
+    /*getVisionData();
+    if(m_robotContainer.m_driverController.povLeft().getAsBoolean() && targetVisible){
+      runTurn(getTurnSetpoint());
+      runForwardOffsets(runForward(0.503), runStrafe(-0.260));
+      runStrafeOffsets(runForward(0.503), runStrafe(-0.260));
+    }
+    else if(m_robotContainer.m_driverController.povRight().getAsBoolean() && targetVisible){
+      runTurn(getTurnSetpoint());
+      runForwardOffsets(runForward(0.27), runStrafe(0.080));
+      runStrafeOffsets(runForward(0.27), runStrafe(0.080));
+
+    }
     SmartDashboard.putBoolean("Visible", targetVisible);
     SmartDashboard.putNumber("Target Distance", targetDistance);
-    SmartDashboard.putNumber("Target Yaw", targetYaw);
-    SmartDashboard.putNumber("Yaw Difference", yawDifference);
+    SmartDashboard.putNumber("Strafe Comparison", strafeComp);
+    SmartDashboard.putNumber("Robot Gyro", m_robotContainer.drivebase.getGyro().getDegrees());
     SmartDashboard.putBoolean("Forward Goal", forwardPID.atSetpoint());
     SmartDashboard.putBoolean("Strafe Goal", strafePID.atSetpoint());
     SmartDashboard.putBoolean("Turn Goal", turnPID.atSetpoint());
+    SmartDashboard.putBoolean("Aligned", forwardPID.atSetpoint() && strafePID.atSetpoint() && turnPID.atSetpoint());*/
     m_robotContainer.forward = -this.forward;
     m_robotContainer.strafe = -this.strafe;
     m_robotContainer.turn = this.turn;
   }
   
-  public void getVisionData(){
+  /*public void getVisionData(){
     var results = camera.getAllUnreadResults();
     if(!results.isEmpty()){
       var result = results.get(results.size() - 1);
@@ -100,7 +108,7 @@ public class Robot extends TimedRobot {
         tag = result.getBestTarget();
         targetYaw = tag.getYaw();
         targetDistance = PhotonUtils.calculateDistanceToTargetMeters(Units.inchesToMeters(8.125), Units.inchesToMeters(13), Units.degreesToRadians(20), Units.degreesToRadians(tag.getPitch()));
-        yawDifference = tag.getYaw() - m_robotContainer.drivebase.getGyro().getDegrees();
+        strafeComp = tag.getBestCameraToTarget().getY();
       }
       else{
         targetVisible = false;
@@ -115,18 +123,18 @@ public class Robot extends TimedRobot {
 
   public double runStrafe(double target){
     strafePID.setSetpoint(target);
-    return strafePID.calculate(yawDifference);
+    return strafePID.calculate(strafeComp);
   }
 
   public void runTurn(double target){
     turnPID.setSetpoint(target);
-    turn = -turnPID.calculate(targetYaw);
+    turn = -turnPID.calculate(m_robotContainer.drivebase.getGyro().getDegrees());
   }
 
   public void runForwardOffsets(double forward, double strafe){
     int tagID = tag.getFiducialId();
     if(tagID == 17 || tagID == 8){
-      this.forward = strafe * Math.sin(60) + forward * Math.cos(60);
+      this.forward = -strafe * Math.sin(60) - forward * Math.cos(60);
     }
     else if(tagID == 18 || tagID == 7){
       this.forward = forward;
@@ -147,25 +155,48 @@ public class Robot extends TimedRobot {
 
   public void runStrafeOffsets(double forward, double strafe){
     int tagID = tag.getFiducialId();
-    if(tagID == 17){
+    if(tagID == 17 || tagID == 8){
       this.strafe = strafe * Math.cos(60) - forward * Math.sin(60);
     }
-    else if(tagID == 18){
+    else if(tagID == 18 || tagID == 7){
       this.strafe = strafe;
     }
-    else if(tagID == 19){
+    else if(tagID == 19 || tagID == 6){
       this.strafe = strafe * Math.cos(-60) - forward * Math.sin(60);
     }
-    else if(tagID == 20){
+    else if(tagID == 20 || tagID == 11){
       this.strafe = strafe * Math.cos(-120) - forward * Math.sin(60);
     }
-    else if(tagID == 21){
+    else if(tagID == 21 || tagID == 10){
       this.strafe = -strafe;
     }
-    else if(tagID == 22){
+    else if(tagID == 22 || tagID == 9){
       this.strafe = strafe * Math.cos(120) - forward * Math.sin(120);
     }
   }
+
+  public double getTurnSetpoint(){
+    int tagID = tag.getFiducialId();
+    if(tagID == 17 || tagID == 8){
+      return 60;
+    }
+    else if(tagID == 18 || tagID == 7){
+      return 0;
+    }
+    else if(tagID == 19 || tagID == 6){
+      return 300;
+    }
+    else if(tagID == 20 || tagID == 11){
+      return 240;
+    }
+    else if(tagID == 21 || tagID == 10){
+      return 180;
+    }
+    else if(tagID == 22 || tagID == 9){
+      return 120;
+    }
+    return 0;
+  }*/
 
   @Override
   public void testInit() {
