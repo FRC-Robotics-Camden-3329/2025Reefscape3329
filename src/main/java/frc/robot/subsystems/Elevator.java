@@ -37,7 +37,7 @@ public class Elevator extends SubsystemBase {
     }
 
     public boolean isAtPosition() {
-        return getEncoderPosition() < target + 0.6 && getEncoderPosition() > target - 0.6;
+        return getEncoderPosition() < target + 0.7 && getEncoderPosition() > target - 0.4; //0.3
     }
 
     public Command moveElevatorCommand(double degrees) {
@@ -51,9 +51,9 @@ public class Elevator extends SubsystemBase {
         if (!isAtPosition() && getEncoderPosition() < target) {
             run(0.3);
         } else if (!isAtPosition() && getEncoderPosition() > target) {
-            run(-0.15);
+            run(-0.15); //-0.1
         } else {
-            run(0.05);
+            run(0.07);
         }
         SmartDashboard.putNumber("Elevator Position", getEncoderPosition());
         SmartDashboard.putNumber("Elevator Target", target);

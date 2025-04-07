@@ -54,7 +54,11 @@ public class Coral extends SubsystemBase{
     public void runIntake(double speed){
         intake.set(-speed);
     }
-    
+
+    public Command runIntakeCommand(double speed){
+        return Commands.runOnce(() -> this.runIntake(speed));
+    }
+        
     public Command intakeCoralCommand(){
         return this.runEnd(() -> this.runIntake(Constants.CoralConstants.intakeSpeed), () -> this.runIntake(0.1));
     }

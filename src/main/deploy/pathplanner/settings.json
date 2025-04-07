@@ -9,14 +9,14 @@
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,
   "defaultNominalVoltage": 12.0,
-  "robotMass": 47.627,
-  "robotMOI": 26.292,
+  "robotMass": 57.606,
+  "robotMOI": 31.801,
   "robotTrackwidth": 0.546,
   "driveWheelRadius": 0.051,
   "driveGearing": 6.75,
   "maxDriveSpeed": 5.45,
   "driveMotorType": "NEO",
-  "driveCurrentLimit": 42.0,
+  "driveCurrentLimit": 51.0,
   "wheelCOF": 1.19,
   "flModuleX": 0.273,
   "flModuleY": 0.273,
@@ -30,6 +30,6 @@
   "bumperOffsetY": 0.0,
   "robotFeatures": [
     "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.1,\"y\":0.0},\"size\":{\"width\":0.743,\"length\":0.15},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}",
-    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.275,\"y\":0.13},\"size\":{\"width\":0.1,\"length\":0.21},\"borderRadius\":0.05,\"strokeWidth\":0.01,\"filled\":true}}"
+    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.275,\"y\":-0.075},\"size\":{\"width\":0.1,\"length\":0.21},\"borderRadius\":0.05,\"strokeWidth\":0.01,\"filled\":true}}"
   ]
 }

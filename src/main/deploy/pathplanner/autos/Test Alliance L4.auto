@@ -7,25 +7,31 @@
         {
           "type": "named",
           "data": {
-            "name": "L2Config"
+            "name": "L3Config"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Opponent Cage to Left Reef 3"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.5
+            "pathName": "Alliance Cage to Mid Alliance"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "EjectCoral"
+            "name": "L4Config"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Mid Alliance to Right Reef 1"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.25
           }
         }
       ]

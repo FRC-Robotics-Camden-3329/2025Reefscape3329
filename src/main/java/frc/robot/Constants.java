@@ -15,7 +15,7 @@ public final class Constants {
     public static final double maxVelocity = 0.3;
     public static final double maxAcceleration = 0.3;
     public static final double L1 = 3.5;     //about 1 inch per 0.7 revolutions
-    public static final double L2 = 14.45  - 0.7 * 1.5 - 1.4 - 2.1 - 0.75 * 0.7 - 2.1 - 0.7 * 2.5 + 0.7 * 0.25 - 0.7;
+    public static final double L2 = 14.45  - 0.7 * 1.5 - 1.4 - 2.1 - 0.75 * 0.7 - 2.1 - 0.7 * 2.5 + 0.7 * 0.25;
     public static final double L3 = 27.675 - 0.7 * 1.5 - 1.4 - 3.5 - 1.4 - 2.1;
     public static final double L4 = 43.05 - 0.7 + 0.35 - 1.4 + 0.7 + 0.35;
     public static final double A1 = 24.261 - 0.7 - 1.4;
@@ -81,7 +81,7 @@ public final class Constants {
 
   public static class ClimbConstants{
     public static final int motorID = 19;
-    public static final double speed = 0.8;
+    public static final double speed = 0.95;
   }
   
   public static final double maxSpeed = Units.feetToMeters(10);

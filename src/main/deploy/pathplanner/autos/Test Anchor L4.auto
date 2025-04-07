@@ -7,19 +7,31 @@
         {
           "type": "named",
           "data": {
-            "name": "L2Config"
+            "name": "L3Config"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Opponent Cage to Left Reef 3"
+            "pathName": "Anchor to Mid Anchor"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "L4Config"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Mid Anchor to Right Reef 2"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 0.5
+            "waitTime": 0.25
           }
         },
         {
@@ -31,43 +43,25 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 2.0
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left Reef 3 to Right Station"
+            "waitTime": 0.25
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "IntakeCoral"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 2.0
+            "name": "StopCoral"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Right Station to Right Reef 5 L2"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.5
+            "pathName": "Right Reef 2 to Mid Anchor"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "EjectCoral"
+            "name": "CSConfig"
           }
         }
       ]

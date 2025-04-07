@@ -7,6 +7,8 @@ import swervelib.SwerveInputStream;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -18,7 +20,7 @@ public class RobotContainer {
   private Elevator m_Elevator = new Elevator();
   private Coral m_Coral = new Coral();
   private Algae m_Algae = new Algae(m_Elevator);
-  private Climb m_Climb = new Climb();
+  //private Climb m_Climb = new Climb();
   public final CommandXboxController m_driverController = new CommandXboxController(OperatorConstants.kDriverControllerPort);
   public final CommandXboxController m_operatorController = new CommandXboxController(OperatorConstants.kOperatorControllerPort);
   public double forward = 0;
@@ -27,11 +29,17 @@ public class RobotContainer {
 
   public RobotContainer() {
     NamedCommands.registerCommand("L2Config", new L2Config(m_Elevator, m_Coral, m_Algae));
+    NamedCommands.registerCommand("L3Config", new L3Config(m_Elevator, m_Coral, m_Algae));
     NamedCommands.registerCommand("L4Config", new L4Config(m_Elevator, m_Coral, m_Algae));
+    NamedCommands.registerCommand("A1Config", new A1Config(m_Elevator, m_Coral, m_Algae));
     NamedCommands.registerCommand("CSConfig", new CSConfig(m_Elevator, m_Coral, m_Algae));
-    NamedCommands.registerCommand("IntakeCoral", m_Coral.intakeCoralCommand());
-    NamedCommands.registerCommand("EjectCoral", m_Coral.ejectCoralCommand());
-    NamedCommands.registerCommand("StopCoral", m_Coral.stopCoralCommand());
+    NamedCommands.registerCommand("IntakeCoral", m_Coral.runIntakeCommand(Constants.CoralConstants.intakeSpeed));
+    NamedCommands.registerCommand("EjectCoral", m_Coral.runIntakeCommand(-Constants.CoralConstants.ejectSpeed));
+    NamedCommands.registerCommand("StopCoral", m_Coral.runIntakeCommand(0));
+    NamedCommands.registerCommand("IntakeAlgae", m_Coral.runOnce(() -> m_Algae.runIntake(Constants.AlgaeConstants.intakeSpeed)));
+    NamedCommands.registerCommand("EjectAlgae", m_Coral.runOnce(() -> m_Algae.runIntake(Constants.AlgaeConstants.ejectSpeed)));
+    NamedCommands.registerCommand("StopAlgae", m_Coral.runOnce(() -> m_Algae.runIntake(0)));
+
     setMotorBrake(true);
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
     autoChooser = AutoBuilder.buildAutoChooser();
@@ -63,8 +71,8 @@ public class RobotContainer {
 
     m_driverController.x().onTrue(drivebase.zeroGyro());
 
-    m_driverController.povUp().whileTrue(m_Climb.climbCommand());
-    m_driverController.povDown().whileTrue(m_Climb.reachCommand());
+    //m_driverController.povUp().whileTrue(m_Climb.climbCommand());
+    //m_driverController.povDown().whileTrue(m_Climb.reachCommand());
   }
 
   public void setMotorBrake(boolean brake) {
