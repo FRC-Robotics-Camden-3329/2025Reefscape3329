@@ -13,7 +13,6 @@ import java.util.function.Supplier;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import swervelib.parser.SwerveParser;
 import swervelib.SwerveDrive;
 import swervelib.math.SwerveMath;
@@ -34,59 +33,71 @@ import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
 
 public class SwerveSubsystem extends SubsystemBase {
-
   File directory = new File(Filesystem.getDeployDirectory(), "swerve");
   SwerveDrive swerveDrive;
   Consumer<Pose2d> resetVision;
   Supplier<VisionData> getVisionData;
-  Field2d field;
-  PathPlannerPath path;
-  PathConstraints constraints;
   Command pathfindingCommand;
 
+  /**
+   * Creates a new swerve subsystem.
+   * 
+   * @param resetVision   A consumer that accepts a {@link Pose2d} to reset the
+   *                      vision system's position when requested
+   * @param getVisionData A supplier for giving {@link VisionData} to the
+   *                      drivebase.
+   */
   public SwerveSubsystem(Consumer<Pose2d> resetVision, Supplier<VisionData> getVisionData) {
     this.resetVision = resetVision;
     this.getVisionData = getVisionData;
 
+    // Initalize swerve drives
     try {
       swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.maxSpeed,
           new Pose2d(new Translation2d(Meter.of(0), Meter.of(0)), Rotation2d.fromDegrees(0)));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    setupPathPlanner();
-    field = swerveDrive.field;
-    resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
 
+    setupPathPlanner();
+
+    // Auto pathing
     // Load the path we want to pathfind to and follow
     try {
-      path = PathPlannerPath.fromPathFile("Auto Path");
+      PathPlannerPath path = PathPlannerPath.fromPathFile("Auto Path");
+      // Create the constraints to use while pathfinding. The constraints defined in
+      // the path will only be used for the path.
+      PathConstraints constraints = new PathConstraints(
+          1.0, 2.0,
+          Units.degreesToRadians(360), Units.degreesToRadians(720));
+
+      // Since AutoBuilder is configured, we can use it to build pathfinding commands
+      pathfindingCommand = AutoBuilder.pathfindThenFollowPath(
+          path,
+          constraints);
     } catch (Exception e) {
+      DriverStation.reportError("Unable to load autonomus path for path following!!", e.getStackTrace());
       throw new RuntimeException("Unable to load path!!");
     }
 
-    // Create the constraints to use while pathfinding. The constraints defined in
-    // the path will only be used for the path.
-    constraints = new PathConstraints(
-        1.0, 2.0,
-        Units.degreesToRadians(360), Units.degreesToRadians(720));
-
-    // Since AutoBuilder is configured, we can use it to build pathfinding commands
-    pathfindingCommand = AutoBuilder.pathfindThenFollowPath(
-        path,
-        constraints);
+    resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
   }
 
+  /**
+   * Gets the path following command. Probably will need to replace this with
+   * something more robust when adding more than one path.
+   * 
+   * @return The command to run this path.
+   */
   public Command getPathFindingCommand() {
     return pathfindingCommand.finallyDo(() -> swerveDrive.drive(new ChassisSpeeds(0, 0, 0)));
   }
 
   /**
-   * Adds suppliers for adding vision measurements
+   * Adds external vision measurements with {@link VisionData}. Will reject any
+   * {@code null} poses as invalid.
    * 
-   * @param pose
-   * @param timestamp
-   * @param visionMeasurementStdDevs
+   * @param visionData the {@link VisionData}'s source
    */
   public void addVisionMeasurement(Supplier<VisionData> visionData) {
     VisionData data = visionData.get();
@@ -104,20 +115,45 @@ public class SwerveSubsystem extends SubsystemBase {
   public void simulationPeriodic() {
   }
 
+  /**
+   * Gets the YAGSL {@link SwerveDrive} in this subsystem.
+   * 
+   * @return this subsystem's {@link SwerveDrive}
+   */
   public SwerveDrive getSwerveDrive() {
     return swerveDrive;
   }
 
+  /**
+   * Drives the swervedrive field oriented.
+   * 
+   * @param velocity the field oriented {@link ChassisSpeeds}
+   */
   public void driveFieldOriented(ChassisSpeeds velocity) {
     swerveDrive.driveFieldOriented(velocity);
   }
 
+  /**
+   * Command to drive the robot field oriented.
+   * 
+   * @param velocity a {@link ChassisSpeeds} {@link Supplier} to provide data
+   * @return
+   */
   public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity) {
     return run(() -> {
       swerveDrive.driveFieldOriented(velocity.get());
     });
   }
 
+  /**
+   * Another drive command
+   * 
+   * @param translationX
+   * @param translationY
+   * @param headingX
+   * @param headingY
+   * @return
+   */
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier headingX,
       DoubleSupplier headingY) {
     return run(() -> {
@@ -129,14 +165,29 @@ public class SwerveSubsystem extends SubsystemBase {
     });
   }
 
+  /**
+   * Whether the drivetrain should be in brake or coast mode.
+   * 
+   * @param brake {@code true} is brake, {@code false} is coast
+   */
   public void setMotorBrake(boolean brake) {
     swerveDrive.setMotorIdleMode(brake);
   }
 
+  /**
+   * Command to zero the gyro. Will wait 0.5s after zeroing.
+   * 
+   * @return command to zero the gyro
+   */
   public Command zeroGyro() {
     return Commands.runOnce(() -> swerveDrive.zeroGyro()).andThen(Commands.waitSeconds(0.5));
   }
 
+  /**
+   * Gets the gyro's yaw.
+   * 
+   * @return the gyro's yaw
+   */
   public Rotation2d getGyro() {
     return swerveDrive.getYaw();
   }
@@ -180,6 +231,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }
   }
 
+  /**
+   * Gets the path by name.
+   * 
+   * @param pathName name of the path
+   * @return the command to follow the path
+   */
   public Command getAutonomousCommand(String pathName) {
     return new PathPlannerAuto(pathName);
   }
