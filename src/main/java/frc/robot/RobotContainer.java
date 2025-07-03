@@ -11,6 +11,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 public class RobotContainer {
@@ -25,6 +26,7 @@ public class RobotContainer {
       OperatorConstants.kDriverControllerPort);
   public final CommandXboxController m_operatorController = new CommandXboxController(
       OperatorConstants.kOperatorControllerPort);
+  private boolean tracking = false;
 
   public RobotContainer() {
     NamedCommands.registerCommand("L2Config", new L2Config(m_Elevator, m_Coral, m_Algae));
@@ -53,6 +55,7 @@ public class RobotContainer {
       .of(drivebase.getSwerveDrive(), () -> -m_driverController.getLeftY(), () -> -m_driverController.getLeftX())
       .withControllerRotationAxis(() -> -m_driverController.getRightX()).deadband(OperatorConstants.DEADBAND)
       .scaleTranslation(0.8)
+      .translationOnlyWhile(() -> !tracking && Math.abs(m_driverController.getRightX()) < OperatorConstants.DEADBAND)
       .allianceRelativeControl(true);
 
   Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
@@ -72,7 +75,13 @@ public class RobotContainer {
     m_operatorController.leftTrigger().whileTrue(m_Algae.intakeAlgaeCommand());
     m_operatorController.rightTrigger().whileTrue(m_Algae.ejectAlgaeCommand());
 
-    m_driverController.a().whileTrue(drivebase.getPathFindingCommand());
+    m_driverController.a()
+        .whileTrue(
+            // toggleing tracking is required because the heading will be the same as it was
+            // before path following if not toggled
+            Commands.runOnce(() -> tracking = true)
+                .andThen(drivebase.getPathFindingCommand()))
+        .onFalse(Commands.runOnce(() -> tracking = false));
 
     m_driverController.x().onTrue(drivebase.zeroGyro());
 
