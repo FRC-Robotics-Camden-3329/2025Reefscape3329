@@ -1,0 +1,85 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "L3Config"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Opponent Cage to Mid Opponent"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "L4Config"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Mid Opponent to Left Reef 3"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.25
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "EjectCoral"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.25
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopCoral"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Left Reef 3 to Mid Opponent"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "CSConfig"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Mid Opponent to Right Station"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeCoral"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

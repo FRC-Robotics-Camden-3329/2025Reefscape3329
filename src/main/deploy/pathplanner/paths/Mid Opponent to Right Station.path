@@ -1,0 +1,68 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 5.982954545454545,
+        "y": 2.165298295454545
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.908863636363636,
+        "y": 2.0356676136363636
+      },
+      "isLocked": false,
+      "linkedName": "Mid Opponent"
+    },
+    {
+      "anchor": {
+        "x": 1.2065624999999998,
+        "y": 0.9786789772727275
+      },
+      "prevControl": {
+        "x": 2.6225284090909096,
+        "y": 1.8561789772727275
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Right Station"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0.7964004499437707,
+      "maxWaypointRelativePos": 1.0,
+      "constraints": {
+        "maxVelocity": 2.0,
+        "maxAcceleration": 2.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 1.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": true
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 55.0
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -59.99999999999999
+  },
+  "useDefaultConstraints": true
+}

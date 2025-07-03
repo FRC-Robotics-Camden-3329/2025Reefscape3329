@@ -1,0 +1,43 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "L3Config"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Alliance Cage to Mid Alliance"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "L4Config"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Mid Alliance to Right Reef 1"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.25
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
