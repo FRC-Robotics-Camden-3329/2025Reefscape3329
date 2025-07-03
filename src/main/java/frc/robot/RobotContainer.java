@@ -72,6 +72,8 @@ public class RobotContainer {
     m_operatorController.leftTrigger().whileTrue(m_Algae.intakeAlgaeCommand());
     m_operatorController.rightTrigger().whileTrue(m_Algae.ejectAlgaeCommand());
 
+    m_driverController.a().whileTrue(drivebase.getPathFindingCommand());
+
     m_driverController.x().onTrue(drivebase.zeroGyro());
 
     // m_driverController.povUp().whileTrue(m_Climb.climbCommand());

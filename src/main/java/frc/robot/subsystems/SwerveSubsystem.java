@@ -21,6 +21,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
+
 import static edu.wpi.first.units.Units.Meter;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -28,6 +30,8 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 public class SwerveSubsystem extends SubsystemBase {
 
@@ -36,6 +40,9 @@ public class SwerveSubsystem extends SubsystemBase {
   Consumer<Pose2d> resetVision;
   Supplier<VisionData> getVisionData;
   Field2d field;
+  PathPlannerPath path;
+  PathConstraints constraints;
+  Command pathfindingCommand;
 
   public SwerveSubsystem(Consumer<Pose2d> resetVision, Supplier<VisionData> getVisionData) {
     this.resetVision = resetVision;
@@ -50,6 +57,28 @@ public class SwerveSubsystem extends SubsystemBase {
     setupPathPlanner();
     field = swerveDrive.field;
     resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
+
+    // Load the path we want to pathfind to and follow
+    try {
+      path = PathPlannerPath.fromPathFile("Auto Path");
+    } catch (Exception e) {
+      throw new RuntimeException("Unable to load path!!");
+    }
+
+    // Create the constraints to use while pathfinding. The constraints defined in
+    // the path will only be used for the path.
+    constraints = new PathConstraints(
+        1.0, 2.0,
+        Units.degreesToRadians(360), Units.degreesToRadians(720));
+
+    // Since AutoBuilder is configured, we can use it to build pathfinding commands
+    pathfindingCommand = AutoBuilder.pathfindThenFollowPath(
+        path,
+        constraints);
+  }
+
+  public Command getPathFindingCommand() {
+    return pathfindingCommand.finallyDo(() -> swerveDrive.drive(new ChassisSpeeds(0, 0, 0)));
   }
 
   /**
@@ -129,7 +158,7 @@ public class SwerveSubsystem extends SubsystemBase {
     RobotConfig config;
     try {
       config = RobotConfig.fromGUISettings();
-      final boolean enableFeedforward = true;
+      final boolean enableFeedforward = false;
       AutoBuilder.configure(swerveDrive::getPose, this::resetOdometry, swerveDrive::getRobotVelocity,
           (speedsRobotRelative, moduleFeedForwards) -> {
             if (enableFeedforward) {
@@ -138,7 +167,7 @@ public class SwerveSubsystem extends SubsystemBase {
             } else {
               swerveDrive.setChassisSpeeds(speedsRobotRelative);
             }
-          }, new PPHolonomicDriveController(new PIDConstants(1.0, 0.0, 0.5), new PIDConstants(1.0, 0.0, 0.1)), config,
+          }, new PPHolonomicDriveController(new PIDConstants(1.0, 0.0, 0.1), new PIDConstants(1.0, 0.0, 0.1)), config,
           () -> {
             var alliance = DriverStation.getAlliance();
             if (alliance.isPresent()) {
