@@ -1,0 +1,176 @@
+{
+  "NetworkTables": {
+    "transitory": {
+      "Shuffleboard": {
+        "open": true
+      },
+      "SmartDashboard": {
+        "Elevator": {
+          "open": true
+        },
+        "Field": {
+          "double[]##v_/SmartDashboard/Field/Robot": {
+            "open": true
+          },
+          "open": true
+        },
+        "Swerve": {
+          "open": true
+        },
+        "open": true
+      }
+    },
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Alerts": "Alerts",
+      "/SmartDashboard/Algae/PID": "ProfiledPIDController",
+      "/SmartDashboard/Algae/Update Target Goal": "Command",
+      "/SmartDashboard/Auto Chooser": "String Chooser",
+      "/SmartDashboard/Coral/Move From Preferences Degrees": "Command",
+      "/SmartDashboard/Coral/PID": "ProfiledPIDController",
+      "/SmartDashboard/Elevator/PID": "ProfiledPIDController",
+      "/SmartDashboard/Elevator/Update from preferences": "Command",
+      "/SmartDashboard/Encoders": "Alerts",
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/IMU": "Alerts",
+      "/SmartDashboard/JSON": "Alerts",
+      "/SmartDashboard/Level 1": "Command",
+      "/SmartDashboard/Level 2": "Command",
+      "/SmartDashboard/Level 3": "Command",
+      "/SmartDashboard/Level 4": "Command",
+      "/SmartDashboard/Motors": "Alerts",
+      "/SmartDashboard/Pigeon 2 (v6) [0]": "Gyro",
+      "/SmartDashboard/Swerve Drive": "Alerts"
+    },
+    "windows": {
+      "/SmartDashboard/Field": {
+        "bottom": 1638,
+        "height": 8.051901817321777,
+        "left": 534,
+        "right": 3466,
+        "top": 291,
+        "traj": {
+          "arrows": false,
+          "style": "Line"
+        },
+        "width": 17.54825210571289,
+        "window": {
+          "visible": true
+        }
+      }
+    }
+  },
+  "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
+    "Connections": {
+      "open": true
+    },
+    "Server": {
+      "open": true
+    },
+    "visible": true
+  },
+  "NetworkTables Settings": {
+    "mode": "Client (NT4)",
+    "serverTeam": "3329"
+  },
+  "Plots": {
+    "Plot <0>": {
+      "plots": [
+        {
+          "axis": [
+            {
+              "autoFit": true
+            }
+          ],
+          "backgroundColor": [
+            0.9399999976158142,
+            0.9399999976158142,
+            0.9399999976158142,
+            1.0
+          ],
+          "height": 672,
+          "series": [
+            {
+              "color": [
+                0.2980392277240753,
+                0.44705885648727417,
+                0.6901960968971252,
+                1.0
+              ],
+              "id": "NT:/SmartDashboard/Elevator/Height (in)"
+            },
+            {
+              "color": [
+                0.8666667342185974,
+                0.5176470875740051,
+                0.32156863808631897,
+                1.0
+              ],
+              "id": "NT:/SmartDashboard/Elevator/Target Height (in)"
+            }
+          ]
+        }
+      ],
+      "window": {
+        "visible": false
+      }
+    },
+    "Plot <1>": {
+      "plots": [
+        {
+          "backgroundColor": [
+            0.9399999976158142,
+            0.9399999976158142,
+            0.9399999976158142,
+            1.0
+          ],
+          "height": 326,
+          "series": [
+            {
+              "color": [
+                0.9407407641410828,
+                0.4120158851146698,
+                0.11497944593429565,
+                1.0
+              ],
+              "id": "NT:/SmartDashboard/Coral Detected"
+            }
+          ]
+        }
+      ],
+      "window": {
+        "visible": false
+      }
+    },
+    "Plot <2>": {
+      "plots": [
+        {
+          "backgroundColor": [
+            0.9399999976158142,
+            0.9399999976158142,
+            0.9399999976158142,
+            1.0
+          ],
+          "height": 600,
+          "series": [
+            {
+              "color": [
+                0.2980392277240753,
+                0.44705885648727417,
+                0.6901960968971252,
+                1.0
+              ],
+              "id": "NT:/SmartDashboard/Feet Elevator Position "
+            }
+          ]
+        }
+      ],
+      "window": {
+        "visible": false
+      }
+    }
+  }
+}

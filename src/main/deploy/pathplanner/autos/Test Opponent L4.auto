@@ -41,18 +41,6 @@
           }
         },
         {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.25
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "StopCoral"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Left Reef 3 to Mid Opponent"

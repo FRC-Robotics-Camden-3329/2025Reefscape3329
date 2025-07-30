@@ -15,9 +15,15 @@ public class VisionData {
     private double timestamp;
     private Matrix<N3, N1> stddev;
 
-    public VisionData(Pose2d poseSupplier, Double timestampSupplier, Matrix<N3, N1> stddev) {
-        this.pose = poseSupplier;
-        this.timestamp = timestampSupplier;
+    public VisionData(Pose2d pose, double timestamp, Matrix<N3, N1> stddev) {
+        this.pose = pose;
+        this.timestamp = timestamp;
+        this.stddev = stddev;
+    }
+
+    public void updateVisionData(Pose2d pose, double timestamp, Matrix<N3, N1> stddev) {
+        this.pose = pose;
+        this.timestamp = timestamp;
         this.stddev = stddev;
     }
 

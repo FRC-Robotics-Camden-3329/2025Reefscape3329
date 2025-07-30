@@ -1,20 +1,45 @@
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearAcceleration;
+import edu.wpi.first.units.measure.LinearVelocity;
 
 public final class Constants {
 
+  public final class ReefConstants {
+    public static enum Side {
+      AB, CD, EF, GH, IJ, KL
+    };
+
+    public static enum Level {
+      L1, L2, L3, L4, A1, A2, CS, P
+    };
+
+    public static final Translation2d reefPositionWS = new Translation2d(4.489, 4.0259);
+    public static final Pose2d REEF_LEFT = new Pose2d(3.19, 4.286, Rotation2d.kZero);
+    public static final Pose2d REEF_CENTER = new Pose2d(3.19, 4.030, Rotation2d.kZero);
+    public static final Pose2d REEF_RIGHT = new Pose2d(3.19, 3.948, Rotation2d.kZero);
+  }
+
   public final class QuestConstants {
-    public static final Transform2d ROBOT_TO_QUEST = new Transform2d(Inches.of(9).unaryMinus(), Inches.of(9),
-        Rotation2d.k180deg);
+    public static final Transform2d ROBOT_TO_QUEST = new Transform2d(
+        Inches.of(9).unaryMinus(), // positive forward from robot center
+        Inches.of(9), // positive left of robot center
+        Rotation2d.k180deg); // rotation around the robot center
     public static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(
         0.02, // Trust down to 2cm in X direction
         0.02, // Trust down to 2cm in Y direction
@@ -25,80 +50,104 @@ public final class Constants {
   public static class OperatorConstants {
     public static final int kDriverControllerPort = 0;
     public static final int kOperatorControllerPort = 1;
-    public static final double DEADBAND = 0.05;
+    public static final double DEADBAND = 0.08;
   }
 
   public static class ElevatorConstants {
     public static final int rightID = 13;
     public static final int leftID = 14;
-    public static final double maxVelocity = 0.3;
-    public static final double maxAcceleration = 0.3;
-    public static final double L1 = 3.5; // about 1 inch per 0.7 revolutions
-    public static final double L2 = 14.45 - 0.7 * 1.5 - 1.4 - 2.1 - 0.75 * 0.7 - 2.1 - 0.7 * 2.5 + 0.7 * 0.25;
-    public static final double L3 = 27.675 - 0.7 * 1.5 - 1.4 - 3.5 - 1.4 - 2.1;
-    public static final double L4 = 43.05 - 0.7 + 0.35 - 1.4 + 0.7 + 0.35;
-    public static final double A1 = 24.261 - 0.7 - 1.4;
-    public static final double A2 = 37.404 - 0.7 - 1.4;
-    public static final double P = 5.881 + 1.4;
-    public static final double CS = 2.75 + 0.35;
+    public static final LinearVelocity MAX_VELOCITY = FeetPerSecond.of(14);
+    public static final LinearAcceleration MAX_ACCELERATION = FeetPerSecondPerSecond.of(6);
+    public static final Distance L1 = Inches.of(18.6);
+    public static final Distance L2 = Inches.of(23.6);
+    public static final Distance L3 = Inches.of(38.14);
+    public static final Distance L4 = Inches.of(64.10);
+    public static final Distance A1 = Inches.of(40.0);
+    public static final Distance A2 = Inches.of(54.7);
+    public static final Distance P = Inches.of(20);
+    public static final Distance CS = Inches.of(18.6);
+
+    public static final double GEAR_RATIO = 16.0;
+    public static final int GEAR_TEETH_NUM = 22;
+    public static final int NUM_STAGES = 3;
+    public static final Distance GEAR_PITCH = Inches.of(0.25);
+    public static final Distance FLOOR_OFFSET = Inches.of(18.6);
+    public static final Distance SPROCKET_PITCH_DIAMETER = Inches.of(1.9);
+    public static final Distance CONVERSION_FACTOR = SPROCKET_PITCH_DIAMETER.times(Math.PI * NUM_STAGES / GEAR_RATIO);
+
+    // control loop parameters
+    // feedback constants
+    public static final double kP = 50.0;
+    public static final double kI = 0;
+    public static final double kD = 0;
+    // feedforward constants
+    public static final double Ks = 0.31869;
+    public static final double Kv = 4.0172;
+    public static final double Ka = 0.74516;
+    public static final double Kg = 0.76811;
   }
 
   public static class CoralConstants {
     public static final int pivotID = 15;
     public static final int intakeID = 16;
     public static final int encoderID = 0;
+    public static final Angle ENCODER_OFFSET = Degrees.of(80);
     public static final double intakeSpeed = 0.3;
     public static final double ejectSpeed = 0.3;
-    public static final double kP = 3.5;
+    // feedforward constants
+    public static final double Ks = 0.0;
+    public static final double Kv = 0.0;
+    public static final double Ka = 0.0;
+    public static final double Kg = 0.4;
+    // feedback constants
+    public static final double kP = 7.0;
     public static final double kI = 0;
-    public static final double kD = 0.1;
-    public static final double maxVelocity = 0.5;
-    public static final double maxAcceleration = 0.2;
-    public static final double L1 = 0.158 - 0.05;
-    public static final double L2 = 0.025;
-    public static final double L3 = 0.025;
-    public static final double L4 = -0.025;
-    public static final double A1 = 0.23;
-    public static final double A2 = 0.23;
-    public static final double P = 0.23;
-    public static final double CS = 0.165;
+    public static final double kD = 0;
+    public static final AngularVelocity MAX_VELOCITY = DegreesPerSecond.of(900);
+    public static final AngularAcceleration MAX_ACCELERATION = DegreesPerSecondPerSecond.of(720);
+    public static final Angle UPPER_LIMIT = Degrees.of(65);
+    public static final Angle LOWER_LIMIT = Degrees.of(-60);
+    public static final double GEAR_RATIO = 16.0;
+    public static final Angle STOWED = Degrees.of(50);
+    public static final Angle L1 = Degrees.of(-13.0);
+    public static final Angle L2 = Degrees.of(-30.5);
+    public static final Angle L3 = Degrees.of(-30.5);
+    public static final Angle L4 = Degrees.of(-46.75);
+    public static final Angle A1 = Degrees.of(50.0);
+    public static final Angle A2 = Degrees.of(50.0);
+    public static final Angle P = Degrees.of(50.0);
+    public static final Angle CS = Degrees.of(30.5);
   }
 
   public static class AlgaeConstants {
     public static final int pivotID = 17;
     public static final int intakeID = 18;
     public static final int encoderID = 1;
-    public static final double intakeSpeed = 4;
-    public static final double ejectSpeed = 0.8;
-    public static final double holdSpeed = 0.5;
-    public static final double kP = 9;
+    public static final double INTAKE_SPEED = 0.8;
+    public static final double EJECT_SPEED = 0.8;
+    public static final double HOLD_SPEED = 0.10;
+    // feedforward constants
+    public static final double Ks = 0;
+    public static final double Kg = 1.0;
+    public static final double Kv = 0.25;
+    public static final double Ka = 0;
+    // feedback constants
+    public static final double kP = 8.0;
     public static final double kI = 0;
-    public static final double kD = 0.1 + (0.125 - 0.1) / 2;
-    public static final double maxVelocity = 0.4;
-    public static final double maxAcceleration = 0.25;
-    public static final double L1 = 0.233;
-    public static final double L2 = 0.233;
-    public static final double L3 = 0.233;
-    public static final double L4 = 0.233;
-    public static final double A1 = 0;
-    public static final double A2 = 0;
-    public static final double P = 0;
-    public static final double CS = 0.233;
+    public static final double kD = 0.4;
+    public static final double GEAR_RATIO = 16.0;
+    public static final Angle ENCODER_OFFSET = Degrees.of(181.8);
+    public static final AngularVelocity MAX_VELOCITY = DegreesPerSecond.of(720);
+    public static final AngularAcceleration MAX_ACCELERATION = DegreesPerSecondPerSecond.of(540);
+    public static final Angle L1 = Degrees.of(85);
+    public static final Angle L2 = Degrees.of(85);
+    public static final Angle L3 = Degrees.of(85);
+    public static final Angle L4 = Degrees.of(85);
+    public static final Angle A1 = Degrees.of(0);
+    public static final Angle A2 = Degrees.of(0);
+    public static final Angle P = Degrees.of(0);
+    public static final Angle CS = Degrees.of(85);
   }
-
-  /*
-   * public static class VisionConstants{
-   * public static final double forwardP = 1.5;
-   * public static final double forwardI = 0;
-   * public static final double forwardD = 0.5;
-   * public static final double strafeP = 1;
-   * public static final double strafeI = 0;
-   * public static final double strafeD = 0.8;
-   * public static final double turnP = 0.02;
-   * public static final double turnI = 0;
-   * public static final double turnD = 0.004 / 10;
-   * }
-   */
 
   public static class ClimbConstants {
     public static final int motorID = 19;

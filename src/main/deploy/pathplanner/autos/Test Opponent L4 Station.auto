@@ -31,25 +31,13 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 0.25
+            "waitTime": 0.251
           }
         },
         {
           "type": "named",
           "data": {
             "name": "EjectCoral"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.25
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "StopCoral"
           }
         },
         {
