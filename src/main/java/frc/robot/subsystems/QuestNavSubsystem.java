@@ -5,23 +5,25 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.QuestConstants;
-import frc.robot.util.VisionData;
+import frc.robot.util.VisionData.EstimateConsumer;
+import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
 
 public class QuestNavSubsystem extends SubsystemBase {
-	private QuestNav questNav = new QuestNav();
-	private VisionData visionData = new VisionData(null, -1, null);
-
-	private StructPublisher<Pose2d> publisher = NetworkTableInstance.getDefault()
+	private final QuestNav questNav = new QuestNav();
+	private final EstimateConsumer estConsumer;
+	private final StructPublisher<Pose2d> publisher = NetworkTableInstance.getDefault()
 			.getStructTopic("QuestNav/WorldPose", Pose2d.struct).publish();
 
 	/** Creates a new QuestNavSubsystem. */
-	public QuestNavSubsystem() {
+	public QuestNavSubsystem(EstimateConsumer estimateConsumer) {
+		this.estConsumer = estimateConsumer;
 	}
 
 	/**
@@ -59,11 +61,7 @@ public class QuestNavSubsystem extends SubsystemBase {
 	 * @return The Quest's worldspace position.
 	 */
 	public Pose2d getQuestPose() {
-		// Get the Quest pose
-		Pose2d questPose = questNav.getPose();
-
-		// Transform by the offset to get your final pose!
-		Pose2d robotPose = questPose.transformBy(QuestConstants.ROBOT_TO_QUEST.inverse());
+		Pose2d robotPose = getQuestPoseRaw().transformBy(QuestConstants.ROBOT_TO_QUEST.inverse());
 		return robotPose;
 	}
 
@@ -72,34 +70,50 @@ public class QuestNavSubsystem extends SubsystemBase {
 	 *         checks.
 	 */
 	public Pose2d getQuestPoseRaw() {
-		return questNav.getPose();
-	}
+		// return questNav.getPose();
+		PoseFrame[] poseFrames = questNav.getAllUnreadPoseFrames();
 
-	public VisionData getVisionData() {
-		if (questNav.isConnected() && questNav.isTracking()) {
-			Pose2d pose = getQuestPose();
-			// Get timestamp from the QuestNav instance
-			double timestamp = questNav.getDataTimestamp();
-
-			SmartDashboard.putNumber("QuestNav/Pose X", pose.getX());
-			SmartDashboard.putNumber("QuestNav/Pose Y", pose.getY());
-			publisher.set(pose);
-			visionData.updateVisionData(pose, timestamp, QuestConstants.QUESTNAV_STD_DEVS);
+		// first check if there is data availiable
+		if (poseFrames.length > 0) {
+			// Get the most recent Quest pose
+			Pose2d questPose = poseFrames[poseFrames.length - 1].questPose();
+			// Transform by the mount pose to get your robot pose
+			return questPose;
 		} else {
-			SmartDashboard.putNumber("QuestNav/Pose X", 3329);
-			SmartDashboard.putNumber("QuestNav/Pose Y", 3329);
-			visionData.updateVisionData(null, -1, null);
+			return new Pose2d(3329, 3329, Rotation2d.kZero);
 		}
-		return visionData;
 	}
 
 	@Override
 	public void periodic() {
 		// This method will be called once per scheduler run
 		questNav.commandPeriodic();
-		SmartDashboard.putBoolean("QuestNav/Connected", questNav.isConnected());
-		SmartDashboard.putBoolean("QuestNav/Tracking", questNav.isTracking());
-		SmartDashboard.putNumber("QuestNav/Quest Battery", questNav.getBatteryPercent());
+		if (questNav.isTracking()) {
+			// Get the latest pose data frames from the Quest
+			PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+
+			// Loop over the pose data frames and send them to the pose estimator
+			for (PoseFrame questFrame : questFrames) {
+				// Get the pose of the Quest
+				Pose2d questPose = questFrame.questPose();
+				// Get timestamp for when the data was sent
+				double timestamp = questFrame.dataTimestamp();
+
+				// Transform by the mount pose to get your robot pose
+				Pose2d robotPose = questPose.transformBy(QuestConstants.ROBOT_TO_QUEST.inverse());
+
+				// add quest position to be tracked seperately from the robot's fused position
+				publisher.accept(robotPose);
+
+				// Add the measurement to our estimator
+				estConsumer.accept(robotPose, timestamp, QuestConstants.QUESTNAV_STD_DEVS);
+			}
+
+			SmartDashboard.putBoolean("QuestNav/Connected", questNav.isConnected());
+			SmartDashboard.putBoolean("QuestNav/Tracking", questNav.isTracking());
+			SmartDashboard.putNumber("QuestNav/Quest Battery",
+					questNav.getBatteryPercent().orElse(-1));
+		}
 	}
 
 }

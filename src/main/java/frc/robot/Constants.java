@@ -2,11 +2,15 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -45,6 +49,28 @@ public final class Constants {
         0.02, // Trust down to 2cm in Y direction
         0.035 // Trust down to 2 degrees rotational
     );
+  }
+
+  public static class PVConstants {
+    public static final String CAMERA_NAME = "Yellow Camera";
+    // The layout of the AprilTags on the field
+    public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout
+        .loadField(AprilTagFields.k2025ReefscapeWelded);
+    public static final Transform3d ROBOT_TO_CAMERA = new Transform3d(
+        Inches.of(5), // x, positive forward
+        Inches.of(11), // y, positive left
+        Inches.of(19.5), // z, positive up
+        new Rotation3d(
+            Degrees.of(0), // roll, counterclockwise rotation angle around the X axis
+            Degrees.of(-15), // pitch, counterclockwise rotation angle around the y axis
+            Degrees.of(0) // yaw, counterclockwise rotation angle around the z axis
+        ));
+
+    // The standard deviations of our vision estimated poses, which affect
+    // correction rate
+    // (Fake values. Experiment and determine estimation noise on an actual robot.)
+    public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(4, 4, 8);
+    public static final Matrix<N3, N1> kMultiTagStdDevs = VecBuilder.fill(0.5, 0.5, 1);
   }
 
   public static class OperatorConstants {

@@ -11,31 +11,8 @@ import edu.wpi.first.math.numbers.N3;
 
 /** Add your docs here. */
 public class VisionData {
-    private Pose2d pose;
-    private double timestamp;
-    private Matrix<N3, N1> stddev;
-
-    public VisionData(Pose2d pose, double timestamp, Matrix<N3, N1> stddev) {
-        this.pose = pose;
-        this.timestamp = timestamp;
-        this.stddev = stddev;
-    }
-
-    public void updateVisionData(Pose2d pose, double timestamp, Matrix<N3, N1> stddev) {
-        this.pose = pose;
-        this.timestamp = timestamp;
-        this.stddev = stddev;
-    }
-
-    public Pose2d getPose() {
-        return pose;
-    }
-
-    public double getDataTimestamp() {
-        return timestamp;
-    }
-
-    public Matrix<N3, N1> getStdMatrix() {
-        return stddev;
+    @FunctionalInterface
+    public static interface EstimateConsumer {
+        public void accept(Pose2d pose, double timestamp, Matrix<N3, N1> estimationStdDevs);
     }
 }
