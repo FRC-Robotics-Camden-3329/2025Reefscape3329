@@ -7,7 +7,6 @@ import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AutoDriveToReefCommand;
 import frc.robot.subsystems.*;
-import frc.robot.util.CalibrateQuestCommand;
 import swervelib.SwerveInputStream;
 
 import static edu.wpi.first.units.Units.Degrees;
@@ -35,7 +34,7 @@ public class RobotContainer {
 	private final SwerveSubsystem drivebase = new SwerveSubsystem();
 	private final QuestNavSubsystem questNav = new QuestNavSubsystem(drivebase::addVisionMeasurement);
 	private final PhotonVisionSubsystem photonVision = new PhotonVisionSubsystem(
-			drivebase::addVisionMeasurement);
+			drivebase::addVisionMeasurement, false);
 
 	private final Elevator elevator = new Elevator();
 	private final Coral coral = new Coral();
@@ -46,21 +45,19 @@ public class RobotContainer {
 			OperatorConstants.kDriverControllerPort);
 	public final CommandXboxController m_operatorController = new CommandXboxController(
 			OperatorConstants.kOperatorControllerPort);
-	private CalibrateQuestCommand calibrateQuestCommand;
 
 	private boolean autoDriving = false;
 
 	public RobotContainer() {
-		drivebase.setResetVision(questNav::setQuestPose);
-		drivebase.resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
+		resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
 
 		// reset the odometry to the pv's inital position
-		// TODO: need to change the autons in pathplanner to not reset the odometry at
-		// the start
 		new Trigger(RobotState::isEnabled)
-				.onTrue(Commands.runOnce(() -> drivebase.resetOdometry(photonVision.getPose())));
+				.onTrue(Commands.runOnce(() -> resetOdometry(photonVision.getPose())));
 
-		calibrateQuestCommand = new CalibrateQuestCommand();
+		// Configure commands for PathPlanner.
+		// Autons created in PathPlanner must not reset the position of the robot
+		// because PV will update the robot's world position.
 		NamedCommands.registerCommand("L2Config", moveTo(ReefConstants.Level.L2));
 		NamedCommands.registerCommand("L3Config", moveTo(ReefConstants.Level.L3));
 		NamedCommands.registerCommand("L4Config", moveTo(ReefConstants.Level.L4));
@@ -75,11 +72,22 @@ public class RobotContainer {
 		drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
 		autoChooser = AutoBuilder.buildAutoChooser();
 		SmartDashboard.putData("Auto Chooser", autoChooser);
+		// do nothing at home, switch to just moving off the line when at comp
 		autoChooser.setDefaultOption("None", null);
 		configureBindings();
 
 		coral.getCoralDetected().onTrue(rumbleControllers(0.8, 0.5));
 		algae.getAlgaeDetected().onTrue(rumbleControllers(0.8, 0.5));
+	}
+
+	/**
+	 * Resets both the drivetrain's position and sets the quest's position.
+	 * 
+	 * @param pose the position in the world
+	 */
+	private void resetOdometry(Pose2d pose) {
+		questNav.setQuestPose(pose);
+		drivebase.resetOdometry(pose);
 	}
 
 	/**
@@ -144,24 +152,17 @@ public class RobotContainer {
 
 		// m_driverController.a()
 		// .whileTrue(
-		// // toggleing tracking is required because the heading will be the same as it
-		// was
-		// // before path following if not toggled
-		// Commands.runOnce(() -> tracking = true)
-		// .andThen(drivebase.getPathFindingCommand()))
-		// .onFalse(Commands.runOnce(() -> tracking = false));
+		// autoDriving(drivebase.getPathFindingCommand()));
 
 		m_driverController.leftBumper()
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_LEFT, drivebase)));
-		m_driverController.y()
+		m_driverController.leftBumper().and(m_driverController.rightBumper())
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_CENTER, drivebase)));
 		m_driverController.rightBumper()
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_RIGHT, drivebase)));
 
 		m_driverController.x()
 				.onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3.2, 4.05, Rotation2d.kZero))));
-
-		m_driverController.back().whileTrue(calibrateQuestCommand.determineOffsetToRobotCenter(drivebase, questNav));
 
 		// m_driverController.povUp().whileTrue(m_Climb.climbCommand());
 		// m_driverController.povDown().whileTrue(m_Climb.reachCommand());

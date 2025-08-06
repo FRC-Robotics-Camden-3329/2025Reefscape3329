@@ -15,128 +15,167 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.PVConstants;
 import frc.robot.util.VisionData.EstimateConsumer;
 
 public class PhotonVisionSubsystem extends SubsystemBase {
-  private final PhotonCamera camera;
-  private final PhotonPoseEstimator photonEstimator;
-  private final EstimateConsumer estConsumer;
-  private final StructPublisher<Pose2d> publisher = NetworkTableInstance.getDefault()
-      .getStructTopic("photonvision/WorldPose", Pose2d.struct).publish();
+	private final PhotonCamera camera;
+	private final PhotonPoseEstimator photonEstimator;
+	private final EstimateConsumer estConsumer;
+	private final boolean useEstConsumer;
+	private final LinearFilter xFilter;
+	private final LinearFilter yFilter;
+	private final LinearFilter thetaFilter;
+	private final Alert cameraDisconnectedAlert;
+	private final StructPublisher<Pose2d> publisherRaw = NetworkTableInstance.getDefault()
+			.getStructTopic("photonvision/WorldPoseRaw", Pose2d.struct).publish();
+	private final StructPublisher<Pose2d> publisherFiltered = NetworkTableInstance.getDefault()
+			.getStructTopic("photonvision/WorldPoseFiltered", Pose2d.struct).publish();
 
-  private Matrix<N3, N1> curStdDevs;
-  private Pose2d lastUpdatedPose;
+	private Matrix<N3, N1> curStdDevs;
+	private Pose2d lastUpdatedPose;
 
-  /** Creates a new PhotonVisionSubsystem. */
-  public PhotonVisionSubsystem(EstimateConsumer estConsumer) {
-    this.estConsumer = estConsumer;
-    camera = new PhotonCamera(PVConstants.CAMERA_NAME);
+	/**
+	 * Creates a new PhotonVisionSubsystem.
+	 * 
+	 * @param estConsumer    consumer to add the vision data to
+	 * @param useEstConsumer whether to use the estimation consumer. Set to
+	 *                       {@code false} if using QuestNav. Set to {@code true} to
+	 *                       continually update the robot's pose with PV
+	 *                       calculations.
+	 */
+	public PhotonVisionSubsystem(EstimateConsumer estConsumer, boolean useEstConsumer) {
+		this.estConsumer = estConsumer;
+		this.useEstConsumer = useEstConsumer;
+		camera = new PhotonCamera(PVConstants.CAMERA_NAME);
+		cameraDisconnectedAlert = new Alert("PhotonVision Not Connected!!", AlertType.kError);
 
-    photonEstimator = new PhotonPoseEstimator(PVConstants.kTagLayout,
-        PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, PVConstants.ROBOT_TO_CAMERA);
-    photonEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
+		// We will filter the position data because we do not care about the phase delay
+		// added (the robot will be stationary when the position is used).
+		// Also filtering because we could accidentally set out position to a bad data
+		// position if we are just grabbing the raw position data.
+		xFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
+		yFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
+		thetaFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
 
-    lastUpdatedPose = new Pose2d(1, 1, Rotation2d.kZero);
-  }
+		photonEstimator = new PhotonPoseEstimator(PVConstants.kTagLayout,
+				PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, PVConstants.ROBOT_TO_CAMERA);
+		photonEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
 
-  /**
-   * Calculates new standard deviations This algorithm is a heuristic that creates
-   * dynamic standard
-   * deviations based on number of tags, estimation strategy, and distance from
-   * the tags.
-   *
-   * @param estimatedPose The estimated pose to guess standard deviations for.
-   * @param targets       All targets in this camera frame
-   */
-  private void updateEstimationStdDevs(
-      Optional<EstimatedRobotPose> estimatedPose, List<PhotonTrackedTarget> targets) {
-    if (estimatedPose.isEmpty()) {
-      // No pose input. Default to single-tag std devs
-      curStdDevs = PVConstants.kSingleTagStdDevs;
+		lastUpdatedPose = new Pose2d(1, 1, Rotation2d.kZero);
+	}
 
-    } else {
-      // Pose present. Start running Heuristic
-      var estStdDevs = PVConstants.kSingleTagStdDevs;
-      int numTags = 0;
-      double avgDist = 0;
+	/**
+	 * Calculates new standard deviations This algorithm is a heuristic that creates
+	 * dynamic standard
+	 * deviations based on number of tags, estimation strategy, and distance from
+	 * the tags.
+	 *
+	 * @param estimatedPose The estimated pose to guess standard deviations for.
+	 * @param targets       All targets in this camera frame
+	 */
+	private void updateEstimationStdDevs(Optional<EstimatedRobotPose> estimatedPose,
+			List<PhotonTrackedTarget> targets) {
+		if (estimatedPose.isEmpty()) {
+			// No pose input. Default to single-tag std devs
+			curStdDevs = PVConstants.kSingleTagStdDevs;
+		} else {
+			// Pose present. Start running Heuristic
+			var estStdDevs = PVConstants.kSingleTagStdDevs;
+			int numTags = 0;
+			double avgDist = 0;
 
-      // Precalculation - see how many tags we found, and calculate an
-      // average-distance metric
-      for (var tgt : targets) {
-        var tagPose = photonEstimator.getFieldTags().getTagPose(tgt.getFiducialId());
-        if (tagPose.isEmpty())
-          continue;
-        numTags++;
-        avgDist += tagPose
-            .get()
-            .toPose2d()
-            .getTranslation()
-            .getDistance(estimatedPose.get().estimatedPose.toPose2d().getTranslation());
-      }
+			// Precalculation - see how many tags we found, and calculate an
+			// average-distance metric
+			for (var tgt : targets) {
+				var tagPose = photonEstimator.getFieldTags().getTagPose(tgt.getFiducialId());
+				if (tagPose.isEmpty())
+					continue;
+				numTags++;
+				avgDist += tagPose
+						.get()
+						.toPose2d()
+						.getTranslation()
+						.getDistance(estimatedPose.get().estimatedPose.toPose2d().getTranslation());
+			}
 
-      if (numTags == 0) {
-        // No tags visible. Default to single-tag std devs
-        curStdDevs = PVConstants.kSingleTagStdDevs;
-      } else {
-        // One or more tags visible, run the full heuristic.
-        avgDist /= numTags;
-        // Decrease std devs if multiple targets are visible
-        if (numTags > 1)
-          estStdDevs = PVConstants.kMultiTagStdDevs;
-        // Increase std devs based on (average) distance
-        if (numTags == 1 && avgDist > 4)
-          estStdDevs = VecBuilder.fill(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
-        else
-          estStdDevs = estStdDevs.times(1 + (avgDist * avgDist / 30));
-        curStdDevs = estStdDevs;
-      }
-    }
-  }
+			if (numTags == 0) {
+				// No tags visible. Default to single-tag std devs
+				curStdDevs = PVConstants.kSingleTagStdDevs;
+			} else {
+				// One or more tags visible, run the full heuristic.
+				avgDist /= numTags;
+				// Decrease std devs if multiple targets are visible
+				if (numTags > 1)
+					estStdDevs = PVConstants.kMultiTagStdDevs;
+				// Increase std devs based on (average) distance
+				if (numTags == 1 && avgDist > 4)
+					estStdDevs = VecBuilder.fill(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+				else
+					estStdDevs = estStdDevs.times(1 + (avgDist * avgDist / 30));
+				curStdDevs = estStdDevs;
+			}
+		}
+	}
 
-  public Pose2d getPose() {
-    return lastUpdatedPose;
-  }
+	/**
+	 * Returns the past calculated world position of the robot. This value is
+	 * filtered.
+	 * 
+	 * @return the worldspace position of the robot.
+	 */
+	public Pose2d getPose() {
+		return lastUpdatedPose;
+	}
 
-  /**
-   * Returns the latest standard deviations of the estimated pose from {@link
-   * #getEstimatedGlobalPose()}, for use with {@link
-   * edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
-   * SwerveDrivePoseEstimator}. This should
-   * only be used when there are targets visible.
-   */
-  public Matrix<N3, N1> getEstimationStdDevs() {
-    return curStdDevs;
-  }
+	/**
+	 * Returns the latest standard deviations of the estimated pose from {@link
+	 * #getEstimatedGlobalPose()}, for use with {@link
+	 * edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
+	 * SwerveDrivePoseEstimator}. This should
+	 * only be used when there are targets visible.
+	 */
+	public Matrix<N3, N1> getEstimationStdDevs() {
+		return curStdDevs;
+	}
 
-  // This method will be called once per scheduler run
-  @Override
-  public void periodic() {
-    Optional<EstimatedRobotPose> visionEst = Optional.empty();
-    for (var change : camera.getAllUnreadResults()) {
-      visionEst = photonEstimator.update(change);
-      updateEstimationStdDevs(visionEst, change.getTargets());
+	// This method will be called once per scheduler run
+	@Override
+	public void periodic() {
+		cameraDisconnectedAlert.set(!camera.isConnected());
 
-      visionEst.ifPresent(
-          est -> {
-            // Change our trust in the measurement based on the tags we can see
-            // var estStdDevs = getEstimationStdDevs();
+		Optional<EstimatedRobotPose> visionEst = Optional.empty();
+		for (var change : camera.getAllUnreadResults()) {
+			visionEst = photonEstimator.update(change);
+			updateEstimationStdDevs(visionEst, change.getTargets());
 
-            publisher.accept(est.estimatedPose.toPose2d());
-            // commented out the acceptor because we are relying on the questnav only once
-            // the inital position has been set
-            // could use further testing
-            // estConsumer.accept(est.estimatedPose.toPose2d(), est.timestampSeconds,
-            // estStdDevs);
-            lastUpdatedPose = est.estimatedPose.toPose2d();
-          });
-    }
-  }
+			visionEst.ifPresent(
+					est -> {
+						Pose2d pose = est.estimatedPose.toPose2d();
+						publisherRaw.accept(pose);
+						if (useEstConsumer) {
+							// Change our trust in the measurement based on the tags we can see
+							var estStdDevs = getEstimationStdDevs();
+							estConsumer.accept(pose, est.timestampSeconds,
+									estStdDevs);
+						}
+						lastUpdatedPose = new Pose2d(
+								xFilter.calculate(pose.getX()),
+								yFilter.calculate(pose.getY()),
+								Rotation2d.fromRadians(thetaFilter.calculate(pose.getRotation().getRadians())));
+
+						publisherFiltered.accept(lastUpdatedPose);
+					});
+		}
+	}
 }

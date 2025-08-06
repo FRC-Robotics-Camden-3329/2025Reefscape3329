@@ -10,7 +10,6 @@ import frc.robot.util.VisionData;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -47,7 +46,6 @@ import com.pathplanner.lib.util.FlippingUtil;
 public class SwerveSubsystem extends SubsystemBase {
 	private File directory = new File(Filesystem.getDeployDirectory(), "swerve");
 	private SwerveDrive swerveDrive;
-	private Consumer<Pose2d> resetVision;
 	private Command pathfindingCommand;
 
 	/**
@@ -79,8 +77,8 @@ public class SwerveSubsystem extends SubsystemBase {
 			// Create the constraints to use while pathfinding. The constraints defined in
 			// the path will only be used for the path.
 			PathConstraints constraints = new PathConstraints(
-					1.0, 2.0,
-					Units.degreesToRadians(360), Units.degreesToRadians(720));
+					2.0, 1.0,
+					Units.degreesToRadians(720), Units.degreesToRadians(360));
 
 			// Since AutoBuilder is configured, we can use it to build pathfinding commands
 			pathfindingCommand = AutoBuilder.pathfindThenFollowPath(
@@ -88,18 +86,8 @@ public class SwerveSubsystem extends SubsystemBase {
 					constraints);
 		} catch (Exception e) {
 			DriverStation.reportError("Unable to load autonomus path for path following!!", e.getStackTrace());
-			throw new RuntimeException("Unable to load path!!");
+			pathfindingCommand = Commands.none();
 		}
-	}
-
-	/**
-	 * This sets the consumer to accept a reset when the pose is reset. Used when
-	 * the pose is reset by the auton.
-	 * 
-	 * @param resetConsumer consumer for a pose2d
-	 */
-	public void setResetVision(Consumer<Pose2d> resetConsumer) {
-		this.resetVision = resetConsumer;
 	}
 
 	/**
@@ -284,9 +272,6 @@ public class SwerveSubsystem extends SubsystemBase {
 	 * @param pose the worldspace positon to set the robot.
 	 */
 	public void resetOdometry(Pose2d pose) {
-		if (resetVision != null) {
-			resetVision.accept(pose);
-		}
 		swerveDrive.resetOdometry(pose);
 	}
 
@@ -317,7 +302,7 @@ public class SwerveSubsystem extends SubsystemBase {
 		try {
 			config = RobotConfig.fromGUISettings();
 			final boolean enableFeedforward = true;
-			AutoBuilder.configure(swerveDrive::getPose, this::resetOdometry, swerveDrive::getRobotVelocity,
+			AutoBuilder.configure(swerveDrive::getPose, swerveDrive::resetOdometry, swerveDrive::getRobotVelocity,
 					(speedsRobotRelative, moduleFeedForwards) -> {
 						if (enableFeedforward) {
 							swerveDrive.drive(speedsRobotRelative,

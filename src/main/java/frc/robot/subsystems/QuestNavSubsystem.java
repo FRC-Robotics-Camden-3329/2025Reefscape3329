@@ -8,6 +8,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.QuestConstants;
@@ -17,6 +19,7 @@ import gg.questnav.questnav.QuestNav;
 
 public class QuestNavSubsystem extends SubsystemBase {
 	private final QuestNav questNav = new QuestNav();
+	private final Alert disconnectedAlert;
 	private final EstimateConsumer estConsumer;
 	private final StructPublisher<Pose2d> publisher = NetworkTableInstance.getDefault()
 			.getStructTopic("QuestNav/WorldPose", Pose2d.struct).publish();
@@ -24,6 +27,7 @@ public class QuestNavSubsystem extends SubsystemBase {
 	/** Creates a new QuestNavSubsystem. */
 	public QuestNavSubsystem(EstimateConsumer estimateConsumer) {
 		this.estConsumer = estimateConsumer;
+		disconnectedAlert = new Alert("QuestNav Not Tracking!!", AlertType.kWarning);
 	}
 
 	/**
@@ -54,9 +58,8 @@ public class QuestNavSubsystem extends SubsystemBase {
 	 * quest transformation.
 	 * 
 	 * <p>
-	 * <b>note: this does not check if the quest is connected and tracking</b>, use
-	 * the
-	 * supplier to get the position to check if it is connected and tracking.
+	 * <b>note: this does not check if the quest is connected and tracking</b>, it
+	 * will report an x and y of 3329 if there is no data avaiable.
 	 * 
 	 * @return The Quest's worldspace position.
 	 */
@@ -70,16 +73,14 @@ public class QuestNavSubsystem extends SubsystemBase {
 	 *         checks.
 	 */
 	public Pose2d getQuestPoseRaw() {
-		// return questNav.getPose();
 		PoseFrame[] poseFrames = questNav.getAllUnreadPoseFrames();
 
 		// first check if there is data availiable
 		if (poseFrames.length > 0) {
 			// Get the most recent Quest pose
-			Pose2d questPose = poseFrames[poseFrames.length - 1].questPose();
-			// Transform by the mount pose to get your robot pose
-			return questPose;
+			return poseFrames[poseFrames.length - 1].questPose();
 		} else {
+			// there is no data avaliable
 			return new Pose2d(3329, 3329, Rotation2d.kZero);
 		}
 	}
@@ -88,6 +89,8 @@ public class QuestNavSubsystem extends SubsystemBase {
 	public void periodic() {
 		// This method will be called once per scheduler run
 		questNav.commandPeriodic();
+		disconnectedAlert.set(!questNav.isTracking());
+
 		if (questNav.isTracking()) {
 			// Get the latest pose data frames from the Quest
 			PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
@@ -99,21 +102,21 @@ public class QuestNavSubsystem extends SubsystemBase {
 				// Get timestamp for when the data was sent
 				double timestamp = questFrame.dataTimestamp();
 
-				// Transform by the mount pose to get your robot pose
+				// Transform by the mount pose to get robot pose
 				Pose2d robotPose = questPose.transformBy(QuestConstants.ROBOT_TO_QUEST.inverse());
 
-				// add quest position to be tracked seperately from the robot's fused position
+				// add quest position to be tracked seperately from the robot's estimator
 				publisher.accept(robotPose);
 
-				// Add the measurement to our estimator
+				// Add the measurement to the estimator
 				estConsumer.accept(robotPose, timestamp, QuestConstants.QUESTNAV_STD_DEVS);
 			}
 
-			SmartDashboard.putBoolean("QuestNav/Connected", questNav.isConnected());
-			SmartDashboard.putBoolean("QuestNav/Tracking", questNav.isTracking());
-			SmartDashboard.putNumber("QuestNav/Quest Battery",
-					questNav.getBatteryPercent().orElse(-1));
 		}
+
+		SmartDashboard.putBoolean("QuestNav/Connected", questNav.isConnected());
+		SmartDashboard.putBoolean("QuestNav/Tracking", questNav.isTracking());
+		SmartDashboard.putNumber("QuestNav/Quest Battery", questNav.getBatteryPercent().orElse(-1));
 	}
 
 }
