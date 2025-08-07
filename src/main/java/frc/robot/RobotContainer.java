@@ -53,7 +53,7 @@ public class RobotContainer {
 
 		// reset the odometry to the pv's inital position
 		new Trigger(RobotState::isEnabled)
-				.onTrue(Commands.runOnce(() -> resetOdometry(photonVision.getPose())));
+				.onTrue(autoDriving(Commands.runOnce(() -> resetOdometry(photonVision.getPose()))));
 
 		// Configure commands for PathPlanner.
 		// Autons created in PathPlanner must not reset the position of the robot

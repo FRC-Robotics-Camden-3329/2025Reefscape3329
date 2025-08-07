@@ -41,8 +41,8 @@ public final class Constants {
 
   public final class QuestConstants {
     public static final Transform2d ROBOT_TO_QUEST = new Transform2d(
-        Inches.of(9).unaryMinus(), // positive forward from robot center
-        Inches.of(9), // positive left of robot center
+        Inches.of(-11.375), // x, positive forward from robot center
+        Inches.of(9), // y, positive left of robot center
         Rotation2d.k180deg); // rotation around the robot center
     public static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(
         0.02, // Trust down to 2cm in X direction
@@ -58,8 +58,8 @@ public final class Constants {
         .loadField(AprilTagFields.k2025ReefscapeWelded);
     public static final Transform3d ROBOT_TO_CAMERA = new Transform3d(
         Inches.of(5), // x, positive forward
-        Inches.of(11), // y, positive left
-        Inches.of(19.5), // z, positive up
+        Inches.of(10), // y, positive left
+        Inches.of(18.75), // z, positive up
         new Rotation3d(
             Degrees.of(0), // roll, counterclockwise rotation angle around the X axis
             Degrees.of(-15), // pitch, counterclockwise rotation angle around the y axis

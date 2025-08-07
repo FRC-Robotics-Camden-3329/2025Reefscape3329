@@ -15,7 +15,7 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
@@ -33,9 +33,9 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 	private final PhotonPoseEstimator photonEstimator;
 	private final EstimateConsumer estConsumer;
 	private final boolean useEstConsumer;
-	private final LinearFilter xFilter;
-	private final LinearFilter yFilter;
-	private final LinearFilter thetaFilter;
+	private final MedianFilter xFilter;
+	private final MedianFilter yFilter;
+	private final MedianFilter thetaFilter;
 	private final Alert cameraDisconnectedAlert;
 	private final StructPublisher<Pose2d> publisherRaw = NetworkTableInstance.getDefault()
 			.getStructTopic("photonvision/WorldPoseRaw", Pose2d.struct).publish();
@@ -64,9 +64,9 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 		// added (the robot will be stationary when the position is used).
 		// Also filtering because we could accidentally set out position to a bad data
 		// position if we are just grabbing the raw position data.
-		xFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
-		yFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
-		thetaFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
+		xFilter = new MedianFilter(10);
+		yFilter = new MedianFilter(10);
+		thetaFilter = new MedianFilter(10);
 
 		photonEstimator = new PhotonPoseEstimator(PVConstants.kTagLayout,
 				PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, PVConstants.ROBOT_TO_CAMERA);
