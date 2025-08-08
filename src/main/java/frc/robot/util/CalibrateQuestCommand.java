@@ -43,10 +43,8 @@ public class CalibrateQuestCommand {
 	 * is non-zero, you may have to swap the x/y and their signs.
 	 */
 	public Command determineOffsetToRobotCenter(SwerveSubsystem swerveDrive, QuestNavSubsystem quest) {
-		// First reset our pose to 0, 0
-		// quest.setQuestPoseRaw(Pose2d.kZero);
-		initPose = quest.getQuestPoseRaw();
 		Supplier<Pose2d> questPose = quest::getQuestPoseRaw;
+		
 		return Commands.repeatingSequence(
 				Commands.run(
 						() -> {
@@ -71,6 +69,7 @@ public class CalibrateQuestCommand {
 									calculatedOffsetToRobot.getY());
 						})
 						.onlyIf(() -> questPose.get().getRotation().getDegrees() > 30))
+				.beforeStarting(Commands.runOnce(() -> initPose = quest.getQuestPoseRaw()))
 				.finallyDo(
 						() -> {
 							// Update current offset
