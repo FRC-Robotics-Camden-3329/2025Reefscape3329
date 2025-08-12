@@ -7,6 +7,7 @@ import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AutoDriveToReefCommand;
 import frc.robot.subsystems.*;
+import frc.robot.util.CalibrateQuestCommand;
 import swervelib.SwerveInputStream;
 
 import static edu.wpi.first.units.Units.Degrees;
@@ -153,6 +154,9 @@ public class RobotContainer {
 		// m_driverController.a()
 		// .whileTrue(
 		// autoDriving(drivebase.getPathFindingCommand()));
+
+		m_driverController.b().whileTrue(autoDriving(
+				new CalibrateQuestCommand().determineOffsetToRobotCenter(drivebase, questNav)));
 
 		m_driverController.leftBumper()
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_LEFT, drivebase)));

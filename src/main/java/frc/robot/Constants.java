@@ -41,8 +41,8 @@ public final class Constants {
 
   public final class QuestConstants {
     public static final Transform2d ROBOT_TO_QUEST = new Transform2d(
-        Inches.of(-11.375), // x, positive forward from robot center
-        Inches.of(9), // y, positive left of robot center
+        Meters.of(-0.222), // x, positive forward from robot center 8.74 in
+        Meters.of(0.162), // y, positive left of robot center 5.944 in
         Rotation2d.k180deg); // rotation around the robot center
     public static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(
         0.02, // Trust down to 2cm in X direction
@@ -76,7 +76,7 @@ public final class Constants {
   public static class OperatorConstants {
     public static final int kDriverControllerPort = 0;
     public static final int kOperatorControllerPort = 1;
-    public static final double DEADBAND = 0.08;
+    public static final double DEADBAND = 0.01;
   }
 
   public static class ElevatorConstants {
