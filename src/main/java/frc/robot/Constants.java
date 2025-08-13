@@ -34,9 +34,9 @@ public final class Constants {
     };
 
     public static final Translation2d reefPositionWS = new Translation2d(4.489, 4.0259);
-    public static final Pose2d REEF_LEFT = new Pose2d(3.19, 4.286, Rotation2d.kZero);
-    public static final Pose2d REEF_CENTER = new Pose2d(3.19, 4.030, Rotation2d.kZero);
-    public static final Pose2d REEF_RIGHT = new Pose2d(3.19, 3.948, Rotation2d.kZero);
+    public static final Pose2d REEF_LEFT = new Pose2d(3.292, 4.201, Rotation2d.kZero);
+    public static final Pose2d REEF_CENTER = new Pose2d(3.292, 4.000, Rotation2d.kZero);
+    public static final Pose2d REEF_RIGHT = new Pose2d(3.292, 3.840, Rotation2d.kZero);
   }
 
   public final class QuestConstants {
@@ -58,11 +58,11 @@ public final class Constants {
         .loadField(AprilTagFields.k2025ReefscapeWelded);
     public static final Transform3d ROBOT_TO_CAMERA = new Transform3d(
         Inches.of(5), // x, positive forward
-        Inches.of(10), // y, positive left
-        Inches.of(18.75), // z, positive up
+        Inches.of(12.4), // y, positive left
+        Inches.of(21.75), // z, positive up
         new Rotation3d(
             Degrees.of(0), // roll, counterclockwise rotation angle around the X axis
-            Degrees.of(-15), // pitch, counterclockwise rotation angle around the y axis
+            Degrees.of(0), // pitch, counterclockwise rotation angle around the y axis
             Degrees.of(0) // yaw, counterclockwise rotation angle around the z axis
         ));
 

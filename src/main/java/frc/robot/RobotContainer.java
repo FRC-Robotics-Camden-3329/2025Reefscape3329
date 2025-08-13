@@ -160,7 +160,7 @@ public class RobotContainer {
 
 		m_driverController.leftBumper()
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_LEFT, drivebase)));
-		m_driverController.leftBumper().and(m_driverController.rightBumper())
+		m_driverController.y()
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_CENTER, drivebase)));
 		m_driverController.rightBumper()
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_RIGHT, drivebase)));
