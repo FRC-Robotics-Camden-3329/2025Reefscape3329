@@ -10,7 +10,6 @@ import frc.robot.util.VisionData;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -22,11 +21,15 @@ import swervelib.parser.SwerveParser;
 import swervelib.SwerveDrive;
 import swervelib.SwerveDriveTest;
 import swervelib.math.SwerveMath;
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 
 import static edu.wpi.first.units.Units.Meter;
@@ -43,8 +46,6 @@ import com.pathplanner.lib.util.FlippingUtil;
 public class SwerveSubsystem extends SubsystemBase {
 	private File directory = new File(Filesystem.getDeployDirectory(), "swerve");
 	private SwerveDrive swerveDrive;
-	private Consumer<Pose2d> resetVision;
-	private Supplier<VisionData> visionDataSupplier;
 	private Command pathfindingCommand;
 
 	/**
@@ -55,10 +56,7 @@ public class SwerveSubsystem extends SubsystemBase {
 	 * @param visionDataSupplier A supplier for giving {@link VisionData} to the
 	 *                           drivebase.
 	 */
-	public SwerveSubsystem(Consumer<Pose2d> resetVision, Supplier<VisionData> visionDataSupplier) {
-		this.resetVision = resetVision;
-		this.visionDataSupplier = visionDataSupplier;
-
+	public SwerveSubsystem() {
 		// Initalize swerve drives
 		try {
 			swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.maxSpeed,
@@ -79,8 +77,8 @@ public class SwerveSubsystem extends SubsystemBase {
 			// Create the constraints to use while pathfinding. The constraints defined in
 			// the path will only be used for the path.
 			PathConstraints constraints = new PathConstraints(
-					1.0, 2.0,
-					Units.degreesToRadians(360), Units.degreesToRadians(720));
+					2.0, 1.0,
+					Units.degreesToRadians(720), Units.degreesToRadians(360));
 
 			// Since AutoBuilder is configured, we can use it to build pathfinding commands
 			pathfindingCommand = AutoBuilder.pathfindThenFollowPath(
@@ -88,10 +86,8 @@ public class SwerveSubsystem extends SubsystemBase {
 					constraints);
 		} catch (Exception e) {
 			DriverStation.reportError("Unable to load autonomus path for path following!!", e.getStackTrace());
-			throw new RuntimeException("Unable to load path!!");
+			pathfindingCommand = Commands.none();
 		}
-
-		resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
 	}
 
 	/**
@@ -103,12 +99,14 @@ public class SwerveSubsystem extends SubsystemBase {
 	public ReefConstants.Side getNearestSide() {
 		// https://www.desmos.com/calculator/es1kjb24zg
 		Translation2d currTranslation = swerveDrive.getPose().getTranslation();
-		Translation2d coralStationPositionWS = ReefConstants.reefPositionWS;
+		Translation2d reefPositionWS = ReefConstants.reefPositionWS;
 		var alliance = DriverStation.getAlliance();
 		if (alliance.isPresent() && alliance.get() == Alliance.Red) {
-			coralStationPositionWS = FlippingUtil.flipFieldPosition(coralStationPositionWS);
+			reefPositionWS = FlippingUtil.flipFieldPosition(reefPositionWS);
 		}
-		currTranslation = currTranslation.minus(coralStationPositionWS);
+
+		// Convert from worldspace to reefspace
+		currTranslation = currTranslation.minus(reefPositionWS);
 		currTranslation = currTranslation.rotateBy(Rotation2d.fromRadians(-0.5));
 
 		int segment = (int) (Math
@@ -136,7 +134,7 @@ public class SwerveSubsystem extends SubsystemBase {
 	}
 
 	/**
-	 * Transforms either the left, right, or middle coral station positions to the
+	 * Transforms either the left, right, or middle reef station positions to the
 	 * correct world space position.
 	 * 
 	 * @param pose the pose to be transformed by. This assumes the pose will be
@@ -168,23 +166,8 @@ public class SwerveSubsystem extends SubsystemBase {
 		return pathfindingCommand.finallyDo(() -> swerveDrive.drive(new ChassisSpeeds(0, 0, 0)));
 	}
 
-	/**
-	 * Adds external vision measurements with {@link VisionData}. Will reject any
-	 * {@code null} poses as invalid.
-	 * 
-	 * @param visionData the {@link VisionData}'s source
-	 */
-	public void addVisionMeasurement() {
-		VisionData data = visionDataSupplier.get();
-		if (data.getPose() != null) {
-			swerveDrive.addVisionMeasurement(data.getPose(), data.getDataTimestamp(),
-					data.getStdMatrix());
-		}
-	}
-
 	@Override
 	public void periodic() {
-		addVisionMeasurement();
 		SmartDashboard.putString("Swerve/Nearest Side", getNearestSide().toString());
 		swerveDrive.field.getObject("GoalSide")
 				.setPose(getReefTransformation(ReefConstants.REEF_CENTER, getNearestSide()));
@@ -201,6 +184,15 @@ public class SwerveSubsystem extends SubsystemBase {
 	 */
 	public SwerveDrive getSwerveDrive() {
 		return swerveDrive;
+	}
+
+	/**
+	 * See
+	 * {@link SwerveDrivePoseEstimator#addVisionMeasurement(Pose2d, double, Matrix)}.
+	 */
+	public void addVisionMeasurement(
+			Pose2d visionMeasurement, double timestampSeconds, Matrix<N3, N1> stdDevs) {
+		swerveDrive.addVisionMeasurement(visionMeasurement, timestampSeconds, stdDevs);
 	}
 
 	/**
@@ -280,7 +272,6 @@ public class SwerveSubsystem extends SubsystemBase {
 	 * @param pose the worldspace positon to set the robot.
 	 */
 	public void resetOdometry(Pose2d pose) {
-		resetVision.accept(pose);
 		swerveDrive.resetOdometry(pose);
 	}
 
@@ -311,7 +302,7 @@ public class SwerveSubsystem extends SubsystemBase {
 		try {
 			config = RobotConfig.fromGUISettings();
 			final boolean enableFeedforward = true;
-			AutoBuilder.configure(swerveDrive::getPose, this::resetOdometry, swerveDrive::getRobotVelocity,
+			AutoBuilder.configure(swerveDrive::getPose, swerveDrive::resetOdometry, swerveDrive::getRobotVelocity,
 					(speedsRobotRelative, moduleFeedForwards) -> {
 						if (enableFeedforward) {
 							swerveDrive.drive(speedsRobotRelative,

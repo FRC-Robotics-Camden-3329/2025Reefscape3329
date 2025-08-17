@@ -20,50 +20,75 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class RobotContainer {
 	private final SendableChooser<Command> autoChooser;
-	private QuestNavSubsystem questNav = new QuestNavSubsystem();
-	public final SwerveSubsystem drivebase = new SwerveSubsystem(questNav::setQuestPose, questNav::getVisionData);
-	private Elevator m_Elevator = new Elevator();
-	private Coral m_Coral = new Coral();
-	private Algae m_Algae = new Algae();
+
+	private final SwerveSubsystem drivebase = new SwerveSubsystem();
+	private final QuestNavSubsystem questNav = new QuestNavSubsystem(drivebase::addVisionMeasurement);
+	private final PhotonVisionSubsystem photonVision = new PhotonVisionSubsystem(
+			drivebase::addVisionMeasurement, false);
+
+	private final Elevator elevator = new Elevator();
+	private final Coral coral = new Coral();
+	private final Algae algae = new Algae();
 	// private Climb m_Climb = new Climb();
+
 	public final CommandXboxController m_driverController = new CommandXboxController(
 			OperatorConstants.kDriverControllerPort);
 	public final CommandXboxController m_operatorController = new CommandXboxController(
 			OperatorConstants.kOperatorControllerPort);
-	private CalibrateQuestCommand calibrateQuestCommand;
 
 	private boolean autoDriving = false;
 
 	public RobotContainer() {
-		calibrateQuestCommand = new CalibrateQuestCommand();
+		resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
+
+		// reset the odometry to the pv's inital position
+		new Trigger(RobotState::isEnabled)
+				.onTrue(autoDriving(Commands.runOnce(() -> resetOdometry(photonVision.getPose()))));
+
+		// Configure commands for PathPlanner.
+		// Autons created in PathPlanner must not reset the position of the robot
+		// because PV will update the robot's world position.
 		NamedCommands.registerCommand("L2Config", moveTo(ReefConstants.Level.L2));
 		NamedCommands.registerCommand("L3Config", moveTo(ReefConstants.Level.L3));
 		NamedCommands.registerCommand("L4Config", moveTo(ReefConstants.Level.L4));
 		NamedCommands.registerCommand("A1Config", moveTo(ReefConstants.Level.A1));
 		NamedCommands.registerCommand("CSConfig", moveTo(ReefConstants.Level.CS));
-		NamedCommands.registerCommand("IntakeCoral", m_Coral.intakeCoralCommand());
-		NamedCommands.registerCommand("EjectCoral", m_Coral.ejectCoralCommand());
-		NamedCommands.registerCommand("IntakeAlgae", m_Coral.intakeCoralCommand());
-		NamedCommands.registerCommand("EjectAlgae", m_Coral.ejectCoralCommand());
+		NamedCommands.registerCommand("IntakeCoral", coral.intakeCoralCommand());
+		NamedCommands.registerCommand("EjectCoral", coral.ejectCoralCommand());
+		NamedCommands.registerCommand("IntakeAlgae", coral.intakeCoralCommand());
+		NamedCommands.registerCommand("EjectAlgae", coral.ejectCoralCommand());
 
 		setMotorBrake(false);
 		drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
 		autoChooser = AutoBuilder.buildAutoChooser();
 		SmartDashboard.putData("Auto Chooser", autoChooser);
+		// do nothing at home, switch to just moving off the line when at comp
 		autoChooser.setDefaultOption("None", null);
 		configureBindings();
 
-		m_Coral.getCoralDetected().onTrue(rumbleControllers(0.8, 0.5));
-		m_Algae.getAlgaeDetected().onTrue(rumbleControllers(0.8, 0.5));
+		coral.getCoralDetected().onTrue(rumbleControllers(0.8, 0.5));
+		algae.getAlgaeDetected().onTrue(rumbleControllers(0.8, 0.5));
+	}
+
+	/**
+	 * Resets both the drivetrain's position and sets the quest's position.
+	 * 
+	 * @param pose the position in the world
+	 */
+	private void resetOdometry(Pose2d pose) {
+		questNav.setQuestPose(pose);
+		drivebase.resetOdometry(pose);
 	}
 
 	/**
@@ -109,31 +134,29 @@ public class RobotContainer {
 
 		// intake coral
 		m_operatorController.leftBumper()
-				.whileTrue(m_Coral.intakeCoralCommand()
-						.andThen(m_Coral.moveCoralCommand(CoralConstants.STOWED)));
+				.whileTrue(coral.intakeCoralCommand()
+						.andThen(coral.moveCoralCommand(CoralConstants.STOWED)));
 		// eject coral
 		m_operatorController.rightBumper()
-				.onTrue(m_Coral.ejectCoralCommand()
-						.andThen(m_Coral.moveCoralCommand(CoralConstants.STOWED)));
-		m_operatorController.back().onTrue(m_Coral.ejectCoralSlowCommand());
+				.onTrue(coral.ejectCoralCommand()
+						.andThen(coral.moveCoralCommand(CoralConstants.STOWED)));
+		m_operatorController.back().onTrue(coral.ejectCoralSlowCommand());
 		// intake algae
 		m_operatorController.leftTrigger()
-				.whileTrue(m_Algae.intakeAlgaeCommand()
-						.andThen(m_Algae.moveAlgaeCommand(Degrees.of(50.0))));
+				.whileTrue(algae.intakeAlgaeCommand()
+						.andThen(algae.moveAlgaeCommand(Degrees.of(50.0))));
 		// eject algae
-		m_operatorController.rightTrigger().onTrue(m_Algae.ejectAlgaeCommand());
+		m_operatorController.rightTrigger().onTrue(algae.ejectAlgaeCommand());
 
 		// m_driverController.leftBumper().whileTrue(drivebase.getAngleCharacterizationCommand());
 		// m_driverController.rightBumper().whileTrue(drivebase.getDriveCharacterizationCommand());
 
 		// m_driverController.a()
 		// .whileTrue(
-		// // toggleing tracking is required because the heading will be the same as it
-		// was
-		// // before path following if not toggled
-		// Commands.runOnce(() -> tracking = true)
-		// .andThen(drivebase.getPathFindingCommand()))
-		// .onFalse(Commands.runOnce(() -> tracking = false));
+		// autoDriving(drivebase.getPathFindingCommand()));
+
+		m_driverController.b().whileTrue(autoDriving(
+				new CalibrateQuestCommand().determineOffsetToRobotCenter(drivebase, questNav)));
 
 		m_driverController.leftBumper()
 				.whileTrue(autoDriving(new AutoDriveToReefCommand(ReefConstants.REEF_LEFT, drivebase)));
@@ -144,8 +167,6 @@ public class RobotContainer {
 
 		m_driverController.x()
 				.onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3.2, 4.05, Rotation2d.kZero))));
-
-		m_driverController.back().whileTrue(calibrateQuestCommand.determineOffsetToRobotCenter(drivebase, questNav));
 
 		// m_driverController.povUp().whileTrue(m_Climb.climbCommand());
 		// m_driverController.povDown().whileTrue(m_Climb.reachCommand());
@@ -184,17 +205,17 @@ public class RobotContainer {
 					|| level == ReefConstants.Level.L3 || level == ReefConstants.Level.L4) {
 				return Commands
 						.parallel(
-								m_Elevator.moveElevatorCommand(elevatorHeight),
-								m_Algae.moveAlgaeCommand(algaeAngle))
-						.andThen(m_Coral.moveCoralCommand(coralAngle))
-						.andThen(m_Coral.ejectCoralCommand())
+								elevator.moveElevatorCommand(elevatorHeight),
+								algae.moveAlgaeCommand(algaeAngle))
+						.andThen(coral.moveCoralCommand(coralAngle))
+						.andThen(coral.ejectCoralCommand())
 						.andThen(moveTo(ReefConstants.Level.CS));
 			} else {
 				// all the other positions just move all three subsystems at the same time
 				return Commands.parallel(
-						m_Elevator.moveElevatorCommand(elevatorHeight),
-						m_Algae.moveAlgaeCommand(algaeAngle),
-						m_Coral.moveCoralCommand(coralAngle))
+						elevator.moveElevatorCommand(elevatorHeight),
+						algae.moveAlgaeCommand(algaeAngle),
+						coral.moveCoralCommand(coralAngle))
 						.andThen(rumbleControllers(0.2, 0.2));
 			}
 		} catch (Exception e) {

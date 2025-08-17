@@ -4,24 +4,33 @@
 
 package frc.robot.subsystems;
 
+import java.util.Optional;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.QuestConstants;
-import frc.robot.util.VisionData;
+import frc.robot.util.VisionData.EstimateConsumer;
+import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
 
 public class QuestNavSubsystem extends SubsystemBase {
-	private QuestNav questNav = new QuestNav();
-	private VisionData visionData = new VisionData(null, -1, null);
-
-	private StructPublisher<Pose2d> publisher = NetworkTableInstance.getDefault()
+	private final QuestNav questNav = new QuestNav();
+	private final Alert disconnectedAlert;
+	private final EstimateConsumer estConsumer;
+	private final StructPublisher<Pose2d> worldPosePublisher = NetworkTableInstance.getDefault()
 			.getStructTopic("QuestNav/WorldPose", Pose2d.struct).publish();
+	private Optional<Pose2d> questWorldPose = Optional.empty();
 
 	/** Creates a new QuestNavSubsystem. */
-	public QuestNavSubsystem() {
+	public QuestNavSubsystem(EstimateConsumer estimateConsumer) {
+		this.estConsumer = estimateConsumer;
+		disconnectedAlert = new Alert("QuestNav Not Tracking!!", AlertType.kWarning);
 	}
 
 	/**
@@ -35,7 +44,7 @@ public class QuestNavSubsystem extends SubsystemBase {
 		Pose2d questPose = pose.transformBy(QuestConstants.ROBOT_TO_QUEST);
 
 		// Send the reset operation
-		questNav.setPose(questPose);
+		setQuestPoseRaw(questPose);
 	}
 
 	/**
@@ -44,62 +53,94 @@ public class QuestNavSubsystem extends SubsystemBase {
 	 * @param pose pose to set the quest to.
 	 */
 	public void setQuestPoseRaw(Pose2d pose) {
-		questNav.setPose(pose);
+		if (questNav.isConnected()) {
+			questNav.setPose(pose);
+		} else {
+			DriverStation.reportError(
+					"Trying to set Quest position but it is not connected!! (is it connected?)",
+					true);
+		}
 	}
 
 	/**
 	 * Gets the position of the quest in worldspace. Applies the nessesary robot to
 	 * quest transformation.
 	 * 
-	 * <p>
-	 * <b>note: this does not check if the quest is connected and tracking</b>, use
-	 * the
-	 * supplier to get the position to check if it is connected and tracking.
-	 * 
-	 * @return The Quest's worldspace position.
+	 * @return The Quest's worldspace position. Will be None if not tracking.
 	 */
-	public Pose2d getQuestPose() {
-		// Get the Quest pose
-		Pose2d questPose = questNav.getPose();
-
-		// Transform by the offset to get your final pose!
-		Pose2d robotPose = questPose.transformBy(QuestConstants.ROBOT_TO_QUEST.inverse());
-		return robotPose;
+	public Optional<Pose2d> getQuestPose() {
+		return getQuestPoseRaw().map(pose -> pose.transformBy(QuestConstants.ROBOT_TO_QUEST.inverse()));
 	}
 
 	/**
-	 * @return Gets the quest pose without any transformation or tracking/connection
-	 *         checks.
+	 * @return Gets the quest pose without any transformation. Will be None if not
+	 *         tracking.
 	 */
-	public Pose2d getQuestPoseRaw() {
-		return questNav.getPose();
-	}
-
-	public VisionData getVisionData() {
-		if (questNav.isConnected() && questNav.isTracking()) {
-			Pose2d pose = getQuestPose();
-			// Get timestamp from the QuestNav instance
-			double timestamp = questNav.getDataTimestamp();
-
-			SmartDashboard.putNumber("QuestNav/Pose X", pose.getX());
-			SmartDashboard.putNumber("QuestNav/Pose Y", pose.getY());
-			publisher.set(pose);
-			visionData.updateVisionData(pose, timestamp, QuestConstants.QUESTNAV_STD_DEVS);
-		} else {
-			SmartDashboard.putNumber("QuestNav/Pose X", 3329);
-			SmartDashboard.putNumber("QuestNav/Pose Y", 3329);
-			visionData.updateVisionData(null, -1, null);
+	public Optional<Pose2d> getQuestPoseRaw() {
+		periodic(); // update and make sure we have the latest quest world pose
+		if (questWorldPose.isEmpty()) {
+			DriverStation.reportError(
+					"Trying to get Quest pose but it is not avaliable!! (is the Quest connected and tracking?)",
+					true);
 		}
-		return visionData;
+		return questWorldPose;
+
+		// The below is how you would get the world pose if the world pose was not being
+		// continually updated in the subsystem's periodic method. The periodic method
+		// will automatically fetch the latest pose. We cannot get the pose here because
+		// the periodic method will empty the quest's internal queue, returning no data
+		// here. Only uncomment the below if not using the subsystem's periodic method
+		// to fetch the quest pose.
+
+		// PoseFrame[] poseFrames = questNav.getAllUnreadPoseFrames();
+
+		// // first check if there is data availiable
+		// if (poseFrames.length > 0) {
+		// // Get the most recent Quest pose
+		// return Optional.of(poseFrames[poseFrames.length - 1].questPose());
+		// } else {
+		// // there is no data avaliable
+		// DriverStation.reportWarning("Trying to access quest position but there is no
+		// data!!", false);
+		// return Optional.empty();
+		// }
 	}
 
 	@Override
 	public void periodic() {
 		// This method will be called once per scheduler run
 		questNav.commandPeriodic();
+		disconnectedAlert.set(!questNav.isTracking());
+
+		if (questNav.isTracking()) {
+			// Get the latest pose data frames from the Quest
+			PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+
+			// Loop over the pose data frames and send them to the pose estimator
+			for (PoseFrame questFrame : questFrames) {
+				// Get the pose of the Quest
+				Pose2d questPose = questFrame.questPose();
+				questWorldPose = Optional.of(questPose);
+				// Get timestamp for when the data was sent
+				double timestamp = questFrame.dataTimestamp();
+
+				// Transform by the mount pose to get robot pose
+				Pose2d robotPose = questPose.transformBy(QuestConstants.ROBOT_TO_QUEST.inverse());
+
+				// add quest position to be tracked seperately from the robot's estimator
+				worldPosePublisher.accept(robotPose);
+
+				// Add the measurement to the estimator
+				estConsumer.accept(robotPose, timestamp, QuestConstants.QUESTNAV_STD_DEVS);
+			}
+
+		} else {
+			questWorldPose = Optional.empty();
+		}
+
 		SmartDashboard.putBoolean("QuestNav/Connected", questNav.isConnected());
 		SmartDashboard.putBoolean("QuestNav/Tracking", questNav.isTracking());
-		SmartDashboard.putNumber("QuestNav/Quest Battery", questNav.getBatteryPercent());
+		SmartDashboard.putNumber("QuestNav/Quest Battery", questNav.getBatteryPercent().orElse(-1));
 	}
 
 }

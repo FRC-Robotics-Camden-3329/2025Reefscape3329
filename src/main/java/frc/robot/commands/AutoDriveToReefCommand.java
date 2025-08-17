@@ -61,7 +61,7 @@ public class AutoDriveToReefCommand extends Command {
 
       // this will infinitly consume the drivetrain, but this command ends once the
       // user releases the trigger (needed for alert to function)
-      followingCommand = Commands.waitUntil(() -> false).finallyDo(() -> tooCloseAlert.set(false));
+      followingCommand = Commands.idle().finallyDo(() -> tooCloseAlert.set(false));
     } else {
       swerveSubsystem.getSwerveDrive().field.getObject("Goal").setPose(dest);
 

@@ -4,6 +4,7 @@
 
 package frc.robot.util;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -22,8 +23,8 @@ public class CalibrateQuestCommand {
 	// --
 
 	private Translation2d calculatedOffsetToRobot = Translation2d.kZero;
-	private double calculateOffsetCount = 1;
-	private Pose2d initPose;
+	private double calculateOffsetCount = 0;
+	private Pose2d initPose = Pose2d.kZero;
 
 	private Translation2d calculateOffsetToRobot(Pose2d questRobotPose) {
 		Rotation2d angle = questRobotPose.getRotation().minus(initPose.getRotation());
@@ -33,8 +34,11 @@ public class CalibrateQuestCommand {
 				/ (2.0 * (1.0 - angle.getCos()));
 		double y = ((-angle.getSin()) * displacement.getX() + (angle.getCos() - 1.0) * displacement.getY())
 				/ (2.0 * (1.0 - angle.getCos()));
+		Translation2d worldFrameOffset = new Translation2d(x, y);
 
-		return new Translation2d(x, y);
+		// To get the offset in the robot's body frame, rotate the world frame
+		// offset back by the robot's initial orientation.
+		return worldFrameOffset.rotateBy(initPose.getRotation().unaryMinus());
 	}
 
 	/**
@@ -43,13 +47,12 @@ public class CalibrateQuestCommand {
 	 * is non-zero, you may have to swap the x/y and their signs.
 	 */
 	public Command determineOffsetToRobotCenter(SwerveSubsystem swerveDrive, QuestNavSubsystem quest) {
-		// First reset our pose to 0, 0
-		// quest.setQuestPoseRaw(Pose2d.kZero);
-		initPose = quest.getQuestPoseRaw();
-		Supplier<Pose2d> questPose = quest::getQuestPoseRaw;
+		Supplier<Optional<Pose2d>> questPose = quest::getQuestPoseRaw;
+
 		return Commands.repeatingSequence(
 				Commands.run(
 						() -> {
+							// rotate in a circle, can decrease speed to collect more samples
 							swerveDrive.driveFieldOriented(
 									new ChassisSpeeds(0, 0, Math.PI / 10.0));
 						},
@@ -58,33 +61,50 @@ public class CalibrateQuestCommand {
 				Commands.runOnce(
 						() -> {
 							// Update current offset
-							Translation2d offset = calculateOffsetToRobot(questPose.get());
+							Translation2d offset = calculateOffsetToRobot(questPose.get().orElse(Pose2d.kZero));
+
+							// Update average with current offset
 							calculatedOffsetToRobot = calculatedOffsetToRobot
 									.times((double) calculateOffsetCount
 											/ (calculateOffsetCount + 1))
 									.plus(offset.div(calculateOffsetCount + 1));
 							calculateOffsetCount++;
 
-							SmartDashboard.putNumber("OculusCalibration/CalculatedOffsetX",
+							SmartDashboard.putNumber("QuestNav/CalculatedOffsetX",
 									calculatedOffsetToRobot.getX());
-							SmartDashboard.putNumber("OculusCalibration/CalculatedOffsetY",
+							SmartDashboard.putNumber("QuestNav/CalculatedOffsetY",
 									calculatedOffsetToRobot.getY());
+							SmartDashboard.putNumber("QuestNav/CalibrationSamples",
+									calculateOffsetCount);
 						})
-						.onlyIf(() -> questPose.get().getRotation().getDegrees() > 30))
+						// for numeric stability, we only calculate between 30 degrees and 150 degrees
+						.onlyIf(() -> questPose.get().orElse(Pose2d.kZero).getRotation().minus(initPose.getRotation())
+								.getDegrees() > 30))
+				.until(() -> questPose.get().orElse(Pose2d.kZero).getRotation().minus(initPose.getRotation())
+						.getDegrees() > 150)
+				.beforeStarting(Commands.runOnce(() -> {
+					initPose = quest.getQuestPoseRaw().orElse(initPose);
+					calculateOffsetCount = 0;
+					calculatedOffsetToRobot = Translation2d.kZero;
+				}))
 				.finallyDo(
 						() -> {
 							// Update current offset
-							Translation2d offset = calculateOffsetToRobot(questPose.get());
+							Translation2d offset = calculateOffsetToRobot(questPose.get().orElse(Pose2d.kZero));
+
+							// Update average with current offset
 							calculatedOffsetToRobot = calculatedOffsetToRobot
 									.times((double) calculateOffsetCount
 											/ (calculateOffsetCount + 1))
 									.plus(offset.div(calculateOffsetCount + 1));
 							calculateOffsetCount++;
 
-							SmartDashboard.putNumber("OculusCalibration/CalculatedOffsetX",
+							SmartDashboard.putNumber("QuestNav/CalculatedOffsetX",
 									calculatedOffsetToRobot.getX());
-							SmartDashboard.putNumber("OculusCalibration/CalculatedOffsetY",
+							SmartDashboard.putNumber("QuestNav/CalculatedOffsetY",
 									calculatedOffsetToRobot.getY());
+							SmartDashboard.putNumber("QuestNav/CalibrationSamples",
+									calculateOffsetCount);
 						});
 	}
 }
