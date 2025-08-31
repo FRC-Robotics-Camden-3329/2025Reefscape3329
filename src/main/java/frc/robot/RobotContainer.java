@@ -6,6 +6,7 @@ import frc.robot.Constants.CoralConstants;
 import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AutoDriveToReefCommand;
+import frc.robot.commands.AutoDriveToGamePieceCommand;
 import frc.robot.subsystems.*;
 import frc.robot.util.CalibrateQuestCommand;
 import swervelib.SwerveInputStream;
@@ -36,6 +37,8 @@ public class RobotContainer {
 	private final QuestNavSubsystem questNav = new QuestNavSubsystem(drivebase::addVisionMeasurement);
 	private final PhotonVisionSubsystem photonVision = new PhotonVisionSubsystem(
 			drivebase::addVisionMeasurement, false);
+	private final GamePieceDetector gamePieceDetector = new GamePieceDetector(
+			() -> drivebase.getSwerveDrive().getPose(), drivebase.getSwerveDrive().field);
 
 	private final Elevator elevator = new Elevator();
 	private final Coral coral = new Coral();
@@ -167,6 +170,8 @@ public class RobotContainer {
 
 		m_driverController.x()
 				.onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3.2, 4.05, Rotation2d.kZero))));
+
+		m_driverController.a().whileTrue(autoDriving(new AutoDriveToGamePieceCommand(gamePieceDetector::getNearestGamePiecePose, drivebase)));
 
 		// m_driverController.povUp().whileTrue(m_Climb.climbCommand());
 		// m_driverController.povDown().whileTrue(m_Climb.reachCommand());

@@ -51,6 +51,32 @@ public final class Constants {
     );
   }
 
+  public static class GamePieceDetectorConstants {
+    public static final String CAMERA_NAME = "Orange Camera";
+    public static final int FILTER_WINDOW_SIZE = 5;
+    /** height of game piece off the ground when we are tracking it */
+    public static final Distance OBJECT_HEIGHT_Z = Inches.of(2);
+    /** distance to combine multiple position readings into one */
+    public static final Distance CLOSENESS_THREASHOLD = Inches.of(5);
+    /**
+     * not strictly the camera's FOV but rather the camera's fov for game piece
+     * tracking capability
+     */
+    public static final double CAMERA_FOV = Math.cos(Degrees.of(30).in(Radians));
+    /** Distance from the camera that the camera can track game pieces */
+    public static final Distance CAMERA_DEPTH = Feet.of(8);
+    /** position of camera on robot */
+    public static final Transform3d ROBOT_TO_CAMERA = new Transform3d(
+        Inches.of(5), // x, positive forward
+        Inches.of(12.4), // y, positive left
+        Inches.of(21.75), // z, positive up
+        new Rotation3d(
+            Degrees.of(0), // roll, counterclockwise rotation angle around the X axis
+            Degrees.of(0), // pitch, counterclockwise rotation angle around the y axis
+            Degrees.of(0) // yaw, counterclockwise rotation angle around the z axis
+        ));
+  }
+
   public static class PVConstants {
     public static final String CAMERA_NAME = "Yellow Camera";
     // The layout of the AprilTags on the field
