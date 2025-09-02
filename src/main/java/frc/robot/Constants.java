@@ -62,7 +62,7 @@ public final class Constants {
      * not strictly the camera's FOV but rather the camera's fov for game piece
      * tracking capability
      */
-    public static final double CAMERA_FOV = Math.cos(Degrees.of(30).in(Radians));
+    public static final Angle CAMERA_FOV = Degrees.of(30);
     /** Distance from the camera that the camera can track game pieces */
     public static final Distance CAMERA_DEPTH = Feet.of(8);
     /** position of camera on robot */

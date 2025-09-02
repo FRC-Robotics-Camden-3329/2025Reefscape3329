@@ -1,6 +1,7 @@
 package frc.robot.util.objtrack;
 
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.filter.MedianFilter;
@@ -85,22 +86,19 @@ public class TrackedGamePiece {
      */
     public boolean updateTTL(Pose2d robot) {
         // first calculate the view vector from the game piece to the robot
-        Translation2d currTranslation = robot.getTranslation();
-        Translation2d objPositionWS = getTranslation2d();
+        Translation2d robotTranslationWS = robot.getTranslation(); // where the robot is on the field
+        Translation2d gpPositionWS = getTranslation2d(); // where the object is on the field
 
-        // this is the same math used to calculate the angle around the reef
-        currTranslation = currTranslation.minus(objPositionWS);
-        currTranslation = currTranslation.rotateBy(Rotation2d.fromRadians(-0.5));
+        // get the angle from the robot to the game piece
+        Rotation2d robotToGPAngle = gpPositionWS.minus(robotTranslationWS).getAngle();
 
-        Rotation2d angle = Rotation2d.fromRadians(Math.atan2(currTranslation.getY(), currTranslation.getX()));
-
-        Translation2d objToRoboVec = new Translation2d(1, 0).rotateBy(angle);
-
-        // next calculate the robot's view direction vector
-        Translation2d robotViewDir = new Translation2d(1, 0).rotateBy(robot.getRotation());
-
-        boolean visible = robotViewDir.toVector().dot(objToRoboVec.toVector()) < GamePieceDetectorConstants.CAMERA_FOV
-                && currTranslation.getDistance(objPositionWS) < GamePieceDetectorConstants.CAMERA_DEPTH.in(Meters);
+        // visible if both looking at the object and near it
+        // looking at is calculated by subtracting the game piece angle from the robot
+        // to the game piece heading from the robot's heading
+        // near is calculated with a simple distance check
+        boolean visible = robot.getRotation().minus(robotToGPAngle).getMeasure()
+                .abs(Radians) < GamePieceDetectorConstants.CAMERA_FOV.in(Radians)
+                && robotTranslationWS.getDistance(gpPositionWS) < GamePieceDetectorConstants.CAMERA_DEPTH.in(Meters);
 
         // set TTL to 0.5s when in view for the first time
         if (visible && visibleLatch) {
