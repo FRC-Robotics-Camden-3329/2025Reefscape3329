@@ -16,6 +16,7 @@ public class TrackedGamePiece {
     private final MedianFilter y;
     private final int UUID;
     private final MutTime TTL = Seconds.mutable(0);
+    private Rotation2d angle;
     private boolean visibleLatch;
 
     /**
@@ -30,6 +31,7 @@ public class TrackedGamePiece {
         this.UUID = UUID;
         x = new MedianFilter(GamePieceDetectorConstants.FILTER_WINDOW_SIZE);
         y = new MedianFilter(GamePieceDetectorConstants.FILTER_WINDOW_SIZE);
+        angle = Rotation2d.kCCW_90deg;
         TTL.mut_replace(Seconds.of(0.5));
         visibleLatch = false;
 
@@ -55,10 +57,13 @@ public class TrackedGamePiece {
     public boolean addIfNear(Translation2d tx) {
         double xx = x.lastValue() - tx.getX();
         double yy = y.lastValue() - tx.getY();
-        double distance = Math.sqrt(xx * xx + yy * yy);
+        double distance = Math.hypot(xx, yy);
         if (distance < GamePieceDetectorConstants.CLOSENESS_THREASHOLD.in(Meters)) {
+            // add x and y values to already known values
             x.calculate(tx.getX());
             y.calculate(tx.getY());
+
+            // reset TTL
             TTL.mut_replace(Seconds.of(0.5));
             return true;
         } else {
@@ -76,7 +81,22 @@ public class TrackedGamePiece {
     }
 
     /**
-     * Updates this tracked game piece's time to live property.
+     * Gets the {@link Pose2d} component of this tracked game piece on the field.
+     * The X and Y represent where the game piece is while the rotation indicates
+     * whether the tracked game piece should be in the camera's current view.
+     * <p>
+     * This {@link Pose2d#getRotation()} component: {@link Rotation2d#kCCW_90deg} if
+     * in view, {@link Rotation2d#kCW_90deg} if not in view.
+     * 
+     * @return the pose coresponding to this tracked game piece
+     */
+    public Pose2d getPose2d() {
+        return new Pose2d(getTranslation2d(), angle);
+    }
+
+    /**
+     * Updates this tracked game piece's time to live property and camera
+     * visibility.
      * 
      * @param robot the current position of the robot in world space. Used to
      *              determine whether this tracked game piece should be in the
@@ -104,10 +124,16 @@ public class TrackedGamePiece {
         if (visible && visibleLatch) {
             TTL.mut_replace(Seconds.of(0.5));
 
+            // point up if in view
+            angle = Rotation2d.kCCW_90deg;
+
             visibleLatch = false;
         } else if (!visible && !visibleLatch) { // set TTL to 15s when out of view
-
             TTL.mut_replace(Seconds.of(15));
+
+            // point down if not in view
+            angle = Rotation2d.kCW_90deg;
+
             visibleLatch = true;
         }
 

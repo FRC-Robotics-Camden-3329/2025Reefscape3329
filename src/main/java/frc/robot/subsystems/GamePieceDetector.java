@@ -46,11 +46,11 @@ public class GamePieceDetector extends SubsystemBase {
 
 	/**
 	 * Gets the nearest game piece to the robot. The object's rotation
-	 * value has no real meaning here, but {@link Pose2d}s are easier to work with
-	 * later.
+	 * value represents the directon from the robot's position to the nearest game
+	 * piece.
 	 * 
 	 * @return either the nearest tracked game piece's {@link Pose2d} or
-	 *         {@code Optional.Empty} if the robot has not seen any game pieces.
+	 *         {@link Optional#empty()} if the robot has not seen any game pieces.
 	 */
 	public Optional<Pose2d> getNearestGamePiecePose() {
 		return trackedGamePieceManager.getNearestGamePiecePose(robotPoseSupplier.get());

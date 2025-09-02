@@ -73,7 +73,7 @@ public class AutoDriveToGamePieceCommand extends Command {
         // or the current robot's position if there isn't any game pices. We do this
         // because it will error out on the closeness check to prevent the command from
         // running if there are no game pieces to drive to
-        Pose2d dest = new Pose2d(goalPoseOptional.orElse(robotPose).getTranslation(), robotPose.getRotation());
+        Pose2d dest = goalPoseOptional.orElse(robotPose);
 
         // the path will error if the drivetrain is too close to the destination
         if (robotPose.getTranslation().getDistance(dest.getTranslation()) < 0.05) {
@@ -88,9 +88,11 @@ public class AutoDriveToGamePieceCommand extends Command {
 
             // only two waypoints for a smooth path: where we are and where we want to go
             waypoints = PathPlannerPath.waypointsFromPoses(robotPose, dest);
-            // we'll set the goal's ending heading to be the same as the robot is currently
-            // to move the robot forward without turning
-            path = new PathPlannerPath(waypoints, constraints, null, new GoalEndState(0.0, robotPose.getRotation()));
+
+            // we'll set the goal's ending heading to be the same as the destination heading.
+            // this will rotate the robot to be facing the game piece as the goal pose's
+            // heaading is the rotation from the current robot position to the game piece
+            path = new PathPlannerPath(waypoints, constraints, null, new GoalEndState(0.0, dest.getRotation()));
             path.preventFlipping = true;
 
             // add to field for visualization

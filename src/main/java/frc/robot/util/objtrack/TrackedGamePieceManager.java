@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 
@@ -56,13 +55,14 @@ public class TrackedGamePieceManager {
     }
 
     /**
-     * Gets the nearest game piece to the supplied pose. Rotation value is hardcoded
-     * to zero.
+     * Gets the nearest game piece to the supplied pose. This
+     * {@link Pose2d#getRotation()} value represents the angle from the input pose
+     * to the tracked game piece.
      * 
      * @param pose pose to get the nearest game piece from, probably the robot's
      *             current position.
-     * @return {@code Optional.of(Pose2d)} if the robot has a tracked game
-     *         piece or {@code Optional.none } if the robot has no tracked game
+     * @return {@link Optional#of(Pose2d)} if the robot has a tracked game
+     *         piece or {@link Optional#empty()} if the robot has no tracked game
      *         pieces.
      */
     public Optional<Pose2d> getNearestGamePiecePose(Pose2d pose) {
@@ -70,29 +70,25 @@ public class TrackedGamePieceManager {
             return Optional.empty();
         }
 
-        TrackedGamePiece out = null; // this will be set to something in the loop
-        double minDist = Double.MAX_VALUE;
-        for (var trackedGamePiece : trackedGamePieces) {
-            double dist = trackedGamePiece.getTranslation2d().getDistance(pose.getTranslation());
-            if (dist < minDist) {
-                minDist = dist;
-                out = trackedGamePiece;
-            }
-        }
-
-        return Optional.of(new Pose2d(out.getTranslation2d(), Rotation2d.kZero));
+        return Optional.of(
+                pose.nearest(trackedGamePieces.stream().map(tgp -> new Pose2d(tgp.getTranslation2d(),
+                        tgp.getTranslation2d().minus(pose.getTranslation()).getAngle())).toList()));
     }
 
     /**
      * Updates the field with all the currently tracked game pieces. Primarily used
      * for debug but could be used as a driver aid.
+     * <p>
+     * Tracked game piece pointing up: in camera view
+     * <p>
+     * Tracked game piece pointing down: not in camera view
      * 
      * @param field the field to populate objects onto
      */
     public void updateField(Field2d field) {
         trackedGamePieces.forEach(
                 tgp -> field.getObject("Game Piece " + tgp.getUUID())
-                        .setPose(new Pose2d(tgp.getTranslation2d(), Rotation2d.kZero)));
+                        .setPose(tgp.getPose2d()));
     }
 
 }
