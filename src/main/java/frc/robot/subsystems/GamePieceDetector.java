@@ -14,6 +14,7 @@ import org.photonvision.PhotonCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.GamePieceDetectorConstants;
@@ -65,8 +66,10 @@ public class GamePieceDetector extends SubsystemBase {
 				// convert camera pitch and yaw to x and y coordinates relative to the camera
 				// through spherical to Cartesian coordinate transformations
 				double r = GamePieceDetectorConstants.OBJECT_HEIGHT_Z.in(Meters) / Math.cos(target.getYaw());
-				double theta = target.getYaw() + GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().getZ();
-				double rho = target.getPitch() + GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().getY();
+				double theta = Units.degreesToRadians(target.getYaw())
+						+ GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().getZ();
+				double rho = Units.degreesToRadians(target.getPitch())
+						+ GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().getY();
 				double x = r * Math.sin(theta) * Math.cos(rho);
 				double y = r * Math.sin(theta) * Math.sin(rho);
 
