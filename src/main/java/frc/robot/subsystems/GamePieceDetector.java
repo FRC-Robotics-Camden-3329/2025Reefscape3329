@@ -27,8 +27,7 @@ public class GamePieceDetector extends SubsystemBase {
 	private final Supplier<Pose2d> robotPoseSupplier;
 	private final Field2d field;
 	private final Transform2d robotToCameraTransform = new Transform2d(
-			GamePieceDetectorConstants.ROBOT_TO_CAMERA.getX(),
-			GamePieceDetectorConstants.ROBOT_TO_CAMERA.getY(),
+			GamePieceDetectorConstants.ROBOT_TO_CAMERA.getTranslation().toTranslation2d(),
 			GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().toRotation2d());
 
 	/**
@@ -44,7 +43,6 @@ public class GamePieceDetector extends SubsystemBase {
 		this.field = field;
 		camera = new PhotonCamera(GamePieceDetectorConstants.CAMERA_NAME);
 		trackedGamePieceManager = new TrackedGamePieceManager();
-
 	}
 
 	/**

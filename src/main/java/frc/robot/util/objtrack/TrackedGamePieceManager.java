@@ -70,6 +70,12 @@ public class TrackedGamePieceManager {
             return Optional.empty();
         }
 
+        /**
+         * Uses `Pose2d.nearest(List<Pose2d>)` to filter for the nearest position. We
+         * map the internal `List<TrackedGamePiece>` to `List<Pose2d>` by using the game
+         * piece's `Translation2d` and calculating a new `Rotation2d` value from the
+         * angle between the input pose to the game piece.
+         */
         return Optional.of(
                 pose.nearest(trackedGamePieces.stream().map(tgp -> new Pose2d(tgp.getTranslation2d(),
                         tgp.getTranslation2d().minus(pose.getTranslation()).getAngle())).toList()));

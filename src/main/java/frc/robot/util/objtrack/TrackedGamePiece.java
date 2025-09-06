@@ -15,7 +15,7 @@ public class TrackedGamePiece {
     private final MedianFilter x;
     private final MedianFilter y;
     private final int UUID;
-    private final MutTime TTL = Seconds.mutable(0);
+    private final MutTime TTL;
     private Rotation2d angle;
     private boolean visibleLatch;
 
@@ -32,9 +32,10 @@ public class TrackedGamePiece {
         x = new MedianFilter(GamePieceDetectorConstants.FILTER_WINDOW_SIZE);
         y = new MedianFilter(GamePieceDetectorConstants.FILTER_WINDOW_SIZE);
         angle = Rotation2d.kCCW_90deg;
-        TTL.mut_replace(Seconds.of(0.5));
+        TTL = Seconds.mutable(GamePieceDetectorConstants.IN_VIEW_TTL.in(Seconds));
         visibleLatch = false;
 
+        // add the x and y to the filter
         x.calculate(tx.getX());
         y.calculate(tx.getY());
     }
@@ -64,7 +65,7 @@ public class TrackedGamePiece {
             y.calculate(tx.getY());
 
             // reset TTL
-            TTL.mut_replace(Seconds.of(0.5));
+            TTL.mut_replace(GamePieceDetectorConstants.IN_VIEW_TTL);
             return true;
         } else {
             return false;
@@ -120,16 +121,16 @@ public class TrackedGamePiece {
                 .abs(Radians) < GamePieceDetectorConstants.CAMERA_FOV.in(Radians)
                 && robotTranslationWS.getDistance(gpPositionWS) < GamePieceDetectorConstants.CAMERA_DEPTH.in(Meters);
 
-        // set TTL to 0.5s when in view for the first time
+        // set TTL to lower value when in view for the first time
         if (visible && visibleLatch) {
-            TTL.mut_replace(Seconds.of(0.5));
+            TTL.mut_replace(GamePieceDetectorConstants.IN_VIEW_TTL);
 
             // point up if in view
             angle = Rotation2d.kCCW_90deg;
 
             visibleLatch = false;
-        } else if (!visible && !visibleLatch) { // set TTL to 15s when out of view
-            TTL.mut_replace(Seconds.of(15));
+        } else if (!visible && !visibleLatch) { // set TTL to higher value when out of view
+            TTL.mut_replace(GamePieceDetectorConstants.OUT_VIEW_TTL);
 
             // point down if not in view
             angle = Rotation2d.kCW_90deg;
@@ -137,12 +138,10 @@ public class TrackedGamePiece {
             visibleLatch = true;
         }
 
-        // loop time should be 0.02s
-        TTL.mut_minus(Seconds.of(0.02));
-        if (TTL.in(Seconds) < 0) {
-            return true;
-        } else {
-            return false;
-        }
+        // subtract by loop time
+        TTL.mut_minus(GamePieceDetectorConstants.LOOP_TIME);
+
+        // returns true if the time has expired (TTL less than zero)
+        return TTL.lt(Seconds.zero());
     }
 }
