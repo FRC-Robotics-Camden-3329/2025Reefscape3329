@@ -14,6 +14,7 @@ import org.photonvision.PhotonCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -25,7 +26,8 @@ public class GamePieceDetector extends SubsystemBase {
 	private final TrackedGamePieceManager trackedGamePieceManager;
 	private final Supplier<Pose2d> robotPoseSupplier;
 	private final Field2d field;
-	private final Transform2d camTransform = new Transform2d(GamePieceDetectorConstants.ROBOT_TO_CAMERA.getX(),
+	private final Transform2d robotToCameraTransform = new Transform2d(
+			GamePieceDetectorConstants.ROBOT_TO_CAMERA.getX(),
 			GamePieceDetectorConstants.ROBOT_TO_CAMERA.getY(),
 			GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().toRotation2d());
 
@@ -63,27 +65,37 @@ public class GamePieceDetector extends SubsystemBase {
 		// first add any new game pieces to the mamanger
 		for (var result : camera.getAllUnreadResults()) {
 			for (var target : result.getTargets()) {
-				// convert camera pitch and yaw to x and y coordinates relative to the camera
-				// through spherical to Cartesian coordinate transformations
-				double r = GamePieceDetectorConstants.OBJECT_HEIGHT_Z.in(Meters) / Math.cos(target.getYaw());
-				double theta = Units.degreesToRadians(target.getYaw())
-						+ GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().getZ();
-				double rho = Units.degreesToRadians(target.getPitch())
-						+ GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().getY();
-				double x = r * Math.sin(theta) * Math.cos(rho);
-				double y = r * Math.sin(theta) * Math.sin(rho);
+				// calculate distance using the algorithm described at
+				// https://docs.limelightvision.io/docs/docs-limelight/tutorials/tutorial-estimating-distance
+				// except we are aiming down so we swap h1 and h2 in the diagram to get a
+				// positive distance value
+				double gamePiecePitch = Math.tan(Units.degreesToRadians(target.getPitch())
+						+ GamePieceDetectorConstants.ROBOT_TO_CAMERA.getRotation().getY());
+				if (gamePiecePitch == 0.0) {
+					continue; // don't divide by zero
+				}
+				double camToGamePieceDistance = (GamePieceDetectorConstants.ROBOT_TO_CAMERA.getZ()
+						- GamePieceDetectorConstants.OBJECT_HEIGHT_Z.in(Meters)) / gamePiecePitch;
 
-				// the rotation value is irrelavent here
-				Pose2d targ = new Pose2d(x, y, Rotation2d.kZero);
+				// now with the distance, rotate the distance value by the camera's yaw value to
+				// get the game piece's x and y from the camera (camera space) via the
+				// Translation2d's constructor (the constructor multiplies dist by cos/sin of
+				// angle for x/y)
+				Translation2d gamePieceTranslationCS = new Translation2d(camToGamePieceDistance,
+						Rotation2d.fromDegrees(target.getYaw()));
 
-				// coordinate transformation: camera to robot
-				targ = targ.transformBy(camTransform.inverse());
+				// convert the translation to a transformation to transform the pose below
+				// we don't care about the rotation so just use zero
+				Transform2d camToGamePieceTransform = new Transform2d(gamePieceTranslationCS, Rotation2d.kZero);
 
-				// coordinate transformation: robot to world (not 100% sure this is needed)
-				targ = targ.relativeTo(robotPoseSupplier.get());
+				// convert from world->robot to robot->camera to camera->game piece
+				// to get world->game piece
+				Pose2d gamePiecePoseWS = robotPoseSupplier.get()
+						.transformBy(robotToCameraTransform)
+						.transformBy(camToGamePieceTransform);
 
 				// add to manager
-				trackedGamePieceManager.addTrackedGamePiece(targ.getTranslation());
+				trackedGamePieceManager.addTrackedGamePiece(gamePiecePoseWS.getTranslation());
 			}
 		}
 
