@@ -21,6 +21,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Time;
 
 public final class Constants {
 
@@ -49,6 +50,38 @@ public final class Constants {
         0.02, // Trust down to 2cm in Y direction
         0.035 // Trust down to 2 degrees rotational
     );
+  }
+
+  public static class GamePieceDetectorConstants {
+    public static final String CAMERA_NAME = "Orange Camera";
+    public static final int FILTER_WINDOW_SIZE = 5;
+    /** height of game piece off the ground when we are tracking it */
+    public static final Distance OBJECT_HEIGHT_Z = Inches.of(2);
+    /** distance to combine multiple position readings into one */
+    public static final Distance CLOSENESS_THREASHOLD = Inches.of(5);
+    /**
+     * not strictly the camera's FOV but rather the camera's fov for game piece
+     * tracking capability
+     */
+    public static final Angle CAMERA_FOV = Degrees.of(30);
+    /** Distance from the camera that the camera can track game pieces */
+    public static final Distance CAMERA_DEPTH = Feet.of(8);
+    /** position of camera on robot */
+    public static final Transform3d ROBOT_TO_CAMERA = new Transform3d(
+        Inches.of(5), // x, positive forward
+        Inches.of(12.4), // y, positive left
+        Inches.of(21.75), // z, positive up
+        new Rotation3d(
+            Degrees.of(0), // roll, counterclockwise rotation angle around the X axis
+            Degrees.of(0), // pitch, counterclockwise rotation angle around the y axis
+            Degrees.of(0) // yaw, counterclockwise rotation angle around the z axis
+        ));
+    /** game piece time to live when it should be in view of the camera */
+    public static final Time IN_VIEW_TTL = Seconds.of(0.5);
+    /** game piece time to live when it should not be in view of the camera */
+    public static final Time OUT_VIEW_TTL = Seconds.of(15.0);
+    /** How much time between loop runs. Defaults to 0.02s (or 50 Hz) */
+    public static final Time LOOP_TIME = Seconds.of(0.02);
   }
 
   public static class PVConstants {
