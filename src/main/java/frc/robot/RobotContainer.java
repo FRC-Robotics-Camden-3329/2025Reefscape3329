@@ -12,11 +12,14 @@ import swervelib.SwerveInputStream;
 
 import static edu.wpi.first.units.Units.Degrees;
 
+import java.util.Optional;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -51,9 +54,13 @@ public class RobotContainer {
 	public RobotContainer() {
 		resetOdometry(new Pose2d(1, 1, Rotation2d.kZero));
 
-		// reset the odometry to the pv's inital position
-		new Trigger(RobotState::isEnabled)
-				.onTrue(autoDriving(Commands.runOnce(() -> resetOdometry(photonVision.getPose()))));
+		// On teleop, reset the odometry to the PV result only if not connected to FMS.
+		// At comp, we only want to reset the pose at the start of auton because we know
+		// the robot will be looking at a tag. We cannot garentee that at the start of
+		// teleop.
+		new Trigger(RobotState::isTeleop).and(new Trigger(DriverStation::isFMSAttached).negate())
+				.onTrue(autoDriving(
+						Commands.runOnce(() -> photonVision.getPoseOptional().ifPresent(pose -> resetOdometry(pose)))));
 
 		// Configure commands for PathPlanner.
 		// Autons created in PathPlanner must not reset the position of the robot
@@ -237,7 +244,42 @@ public class RobotContainer {
 		drivebase.setMotorBrake(brake);
 	}
 
+	/**
+	 * Gets the autonomous command according to the PathPlanner autonomous selector.
+	 * Will reset the robot's position according to PhotonVision if PV has a valid
+	 * position. Will not move if no autonomous is selected.
+	 * 
+	 * @return the autonomous command
+	 */
 	public Command getAutonomousCommand() {
-		return autoChooser.getSelected();
+		Command auton = autoChooser.getSelected();
+		Optional<Pose2d> pvPose = photonVision.getPoseOptional();
+
+		if (auton != null && pvPose.isPresent()) {
+			// auton selected and valid pv pose
+
+			return autoDriving(auton.beforeStarting(() -> resetOdometry(pvPose.get())));
+		} else if (auton != null && pvPose.isEmpty()) {
+			// auton selected and invalid pv pose
+			DriverStation.reportError("Auton Error: Auton SELECTED but the PV POSE is INVALID!!", false);
+
+			// can maybe change this to slowly move off the line, but need to be careful
+			// because the robot doesn't know where it is and we don't want to get in the
+			// way of our other alliance members.
+			return Commands.none();
+		} else if (auton == null && pvPose.isPresent()) {
+			// no auton selected and valid pv pose
+			DriverStation.reportError("Auton Error: Auton NOT SELECTED (PV POSE is VALID)!!", false);
+
+			// can also maybe change this to just slowly move off the line in addition to
+			// reseting the robot's pose
+			return autoDriving(Commands.runOnce(() -> resetOdometry(pvPose.get())));
+		} else {
+			// no auton selected and invalid pv pose
+			DriverStation.reportError("Auton Error: Auton NOT SELECTED and PV POSE is INVALID!!", false);
+
+			// can also maybe change this to just slowly move off the line
+			return Commands.none();
+		}
 	}
 }

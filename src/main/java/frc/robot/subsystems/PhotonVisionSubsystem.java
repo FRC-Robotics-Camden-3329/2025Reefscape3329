@@ -4,6 +4,8 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Seconds;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -22,9 +24,12 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.units.measure.MutTime;
 import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.Constants.PVConstants;
 import frc.robot.util.VisionData.EstimateConsumer;
 
@@ -37,6 +42,8 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 	private final MedianFilter yFilter;
 	private final MedianFilter thetaFilter;
 	private final Alert cameraDisconnectedAlert;
+	private final Alert cameraNotTrackingAlert;
+	private final MutTime timeSinceLastUpdatedPose = Seconds.mutable(0.0);
 	private final StructPublisher<Pose2d> publisherRaw = NetworkTableInstance.getDefault()
 			.getStructTopic("photonvision/WorldPoseRaw", Pose2d.struct).publish();
 	private final StructPublisher<Pose2d> publisherFiltered = NetworkTableInstance.getDefault()
@@ -58,7 +65,8 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 		this.estConsumer = estConsumer;
 		this.useEstConsumer = useEstConsumer;
 		camera = new PhotonCamera(PVConstants.CAMERA_NAME);
-		cameraDisconnectedAlert = new Alert("PhotonVision Not Connected!!", AlertType.kError);
+		cameraDisconnectedAlert = new Alert("photonvision", "PhotonVision Not Connected!!", AlertType.kError);
+		cameraNotTrackingAlert = new Alert("photonvision", "PhotonVision Not Tracking!!", AlertType.kWarning);
 
 		// We will filter the position data because we do not care about the phase delay
 		// added (the robot will be stationary when the position is used).
@@ -129,13 +137,20 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 	}
 
 	/**
-	 * Returns the past calculated world position of the robot. This value is
-	 * filtered.
+	 * Returns the calculated world position of the robot. This value is
+	 * filtered. Requires a tag to be seen within the last second to be valid.
 	 * 
-	 * @return the worldspace position of the robot.
+	 * @return {@link Optional#of(Pose2d)} if a tag was seen within the last second,
+	 *         <p>
+	 *         {@link Optional#empty()} if no tags seen within the last second.
 	 */
-	public Pose2d getPose() {
-		return lastUpdatedPose;
+	public Optional<Pose2d> getPoseOptional() {
+		if (timeSinceLastUpdatedPose.gt(Seconds.zero())) {
+			return Optional.of(lastUpdatedPose);
+		} else {
+			DriverStation.reportWarning("Tried to get PV pose but it was invalid!!", false);
+			return Optional.empty();
+		}
 	}
 
 	/**
@@ -153,6 +168,13 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 	@Override
 	public void periodic() {
 		cameraDisconnectedAlert.set(!camera.isConnected());
+		if (timeSinceLastUpdatedPose.gt(Seconds.zero())) {
+			// camera has updated pose within the last second
+			cameraNotTrackingAlert.set(false);
+			timeSinceLastUpdatedPose.mut_minus(Constants.LOOP_TIME);
+		} else {
+			cameraNotTrackingAlert.set(true);
+		}
 
 		Optional<EstimatedRobotPose> visionEst = Optional.empty();
 		for (var change : camera.getAllUnreadResults()) {
@@ -175,6 +197,7 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 								xFilter.calculate(pose.getX()),
 								yFilter.calculate(pose.getY()),
 								Rotation2d.fromRadians(thetaFilter.calculate(pose.getRotation().getRadians())));
+						timeSinceLastUpdatedPose.mut_replace(PVConstants.VALID_TIME);
 
 						publisherFiltered.accept(lastUpdatedPose);
 					});

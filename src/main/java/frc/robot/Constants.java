@@ -25,6 +25,9 @@ import edu.wpi.first.units.measure.Time;
 
 public final class Constants {
 
+  /** How much time between loop runs. Defaults to 0.02s (or 50 Hz) */
+  public static final Time LOOP_TIME = Seconds.of(0.02);
+
   /**
    * Represents the three subsystem states for a desired robot state. Has static
    * subsystem states for predetermined robot configuration.
@@ -110,8 +113,6 @@ public final class Constants {
     public static final Time IN_VIEW_TTL = Seconds.of(0.5);
     /** game piece time to live when it should not be in view of the camera */
     public static final Time OUT_VIEW_TTL = Seconds.of(15.0);
-    /** How much time between loop runs. Defaults to 0.02s (or 50 Hz) */
-    public static final Time LOOP_TIME = Seconds.of(0.02);
   }
 
   public static class PVConstants {
@@ -128,6 +129,8 @@ public final class Constants {
             Degrees.of(0), // pitch, counterclockwise rotation angle around the y axis
             Degrees.of(0) // yaw, counterclockwise rotation angle around the z axis
         ));
+    /** time for the reading to be valid for */
+    public static final Time VALID_TIME = Seconds.of(1.0);
 
     // The standard deviations of our vision estimated poses, which affect
     // correction rate

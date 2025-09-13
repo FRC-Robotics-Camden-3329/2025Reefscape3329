@@ -9,6 +9,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.measure.MutTime;
+import frc.robot.Constants;
 import frc.robot.Constants.GamePieceDetectorConstants;
 
 public class TrackedGamePiece {
@@ -139,7 +140,7 @@ public class TrackedGamePiece {
         }
 
         // subtract by loop time
-        TTL.mut_minus(GamePieceDetectorConstants.LOOP_TIME);
+        TTL.mut_minus(Constants.LOOP_TIME);
 
         // returns true if the time has expired (TTL less than zero)
         return TTL.lt(Seconds.zero());
