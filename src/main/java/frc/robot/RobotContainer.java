@@ -1,9 +1,8 @@
 package frc.robot;
 
 import frc.robot.Constants.ReefConstants;
-import frc.robot.Constants.AlgaeConstants;
+import frc.robot.Constants.SubsystemStates;
 import frc.robot.Constants.CoralConstants;
-import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AutoDriveToReefCommand;
 import frc.robot.commands.AutoDriveToGamePieceCommand;
@@ -18,9 +17,6 @@ import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -62,11 +58,11 @@ public class RobotContainer {
 		// Configure commands for PathPlanner.
 		// Autons created in PathPlanner must not reset the position of the robot
 		// because PV will update the robot's world position.
-		NamedCommands.registerCommand("L2Config", moveTo(ReefConstants.Level.L2));
-		NamedCommands.registerCommand("L3Config", moveTo(ReefConstants.Level.L3));
-		NamedCommands.registerCommand("L4Config", moveTo(ReefConstants.Level.L4));
-		NamedCommands.registerCommand("A1Config", moveTo(ReefConstants.Level.A1));
-		NamedCommands.registerCommand("CSConfig", moveTo(ReefConstants.Level.CS));
+		NamedCommands.registerCommand("L2Config", changeSubsystemStates(SubsystemStates.L2));
+		NamedCommands.registerCommand("L3Config", changeSubsystemStates(SubsystemStates.L3));
+		NamedCommands.registerCommand("L4Config", changeSubsystemStates(SubsystemStates.L4));
+		NamedCommands.registerCommand("A1Config", changeSubsystemStates(SubsystemStates.A1));
+		NamedCommands.registerCommand("CSConfig", changeSubsystemStates(SubsystemStates.CS));
 		NamedCommands.registerCommand("IntakeCoral", coral.intakeCoralCommand());
 		NamedCommands.registerCommand("EjectCoral", coral.ejectCoralCommand());
 		NamedCommands.registerCommand("IntakeAlgae", coral.intakeCoralCommand());
@@ -125,15 +121,15 @@ public class RobotContainer {
 	Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
 
 	private void configureBindings() {
-		m_operatorController.povLeft().onTrue(moveTo(ReefConstants.Level.L1));
-		m_operatorController.povDown().onTrue(moveTo(ReefConstants.Level.L2));
-		m_operatorController.povUp().onTrue(moveTo(ReefConstants.Level.L3));
-		m_operatorController.povRight().onTrue(moveTo(ReefConstants.Level.L4));
+		m_operatorController.povLeft().onTrue(changeSubsystemStates(SubsystemStates.L1));
+		m_operatorController.povDown().onTrue(changeSubsystemStates(SubsystemStates.L2));
+		m_operatorController.povUp().onTrue(changeSubsystemStates(SubsystemStates.L3));
+		m_operatorController.povRight().onTrue(changeSubsystemStates(SubsystemStates.L4));
 
-		m_operatorController.a().onTrue(moveTo(ReefConstants.Level.CS));
-		m_operatorController.b().onTrue(moveTo(ReefConstants.Level.A1));
-		m_operatorController.y().onTrue(moveTo(ReefConstants.Level.A2));
-		m_operatorController.x().onTrue(moveTo(ReefConstants.Level.P));
+		m_operatorController.a().onTrue(changeSubsystemStates(SubsystemStates.CS));
+		m_operatorController.b().onTrue(changeSubsystemStates(SubsystemStates.A1));
+		m_operatorController.y().onTrue(changeSubsystemStates(SubsystemStates.A2));
+		m_operatorController.x().onTrue(changeSubsystemStates(SubsystemStates.P));
 
 		// intake coral
 		m_operatorController.leftBumper()
@@ -171,63 +167,47 @@ public class RobotContainer {
 		m_driverController.x()
 				.onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3.2, 4.05, Rotation2d.kZero))));
 
-		m_driverController.a().whileTrue(autoDriving(new AutoDriveToGamePieceCommand(gamePieceDetector::getNearestGamePiecePose, drivebase)));
+		m_driverController.a().whileTrue(
+				autoDriving(new AutoDriveToGamePieceCommand(gamePieceDetector::getNearestGamePiecePose, drivebase)));
 
 		// m_driverController.povUp().whileTrue(m_Climb.climbCommand());
 		// m_driverController.povDown().whileTrue(m_Climb.reachCommand());
 
-		SmartDashboard.putData("Level 1", moveTo(ReefConstants.Level.L1));
-		SmartDashboard.putData("Level 2", moveTo(ReefConstants.Level.L2));
-		SmartDashboard.putData("Level 3", moveTo(ReefConstants.Level.L3));
-		SmartDashboard.putData("Level 4", moveTo(ReefConstants.Level.L4));
+		SmartDashboard.putData("Level 1", changeSubsystemStates(SubsystemStates.L1));
+		SmartDashboard.putData("Level 2", changeSubsystemStates(SubsystemStates.L2));
+		SmartDashboard.putData("Level 3", changeSubsystemStates(SubsystemStates.L3));
+		SmartDashboard.putData("Level 4", changeSubsystemStates(SubsystemStates.L4));
 	}
 
 	/**
-	 * Reconfigures the robot to the selected level/action. If the level is a coral
-	 * level, the robot will eject the coral and then go back to the intaking
-	 * configuration.
+	 * Reconfigures the robot to the desired subsystem states. If the state is a
+	 * coral state, the robot will eject the coral and then go back to the intaking
+	 * state.
 	 * 
-	 * @param level the desired level to move the robot to
-	 * @return the command that reconfigures the robot
+	 * @param state the desired state to move the robot to
+	 * @return the command that reconfigures the robot, ends once the state has been
+	 *         reached
 	 */
-	private Command moveTo(ReefConstants.Level level) {
-		try {
-			/**
-			 * This is using some Java "magic" to get the class field corresponding to the
-			 * level name. For example, this requires `ElevatorConstants` to have the field
-			 * `L1` because `ReefConstants.L1` exists. It then gets the `L1` value from
-			 * `ElevatorConstants`. I googled "java get class variable by string name" for
-			 * this. It requires the try/catch block in case the field does not exist.
-			 * Probably not the best way to do this...
-			 */
-			Distance elevatorHeight = (Distance) ElevatorConstants.class.getDeclaredField(level.name()).get(null);
-			Angle algaeAngle = (Angle) AlgaeConstants.class.getDeclaredField(level.name()).get(null);
-			Angle coralAngle = (Angle) CoralConstants.class.getDeclaredField(level.name()).get(null);
-
-			// handle the coral seperately to wait for moving the coral and score once it
-			// gets to that position
-			if (level == ReefConstants.Level.L1 || level == ReefConstants.Level.L2
-					|| level == ReefConstants.Level.L3 || level == ReefConstants.Level.L4) {
-				return Commands
-						.parallel(
-								elevator.moveElevatorCommand(elevatorHeight),
-								algae.moveAlgaeCommand(algaeAngle))
-						.andThen(coral.moveCoralCommand(coralAngle))
-						.andThen(coral.ejectCoralCommand())
-						.andThen(moveTo(ReefConstants.Level.CS));
-			} else {
-				// all the other positions just move all three subsystems at the same time
-				return Commands.parallel(
-						elevator.moveElevatorCommand(elevatorHeight),
-						algae.moveAlgaeCommand(algaeAngle),
-						coral.moveCoralCommand(coralAngle))
-						.andThen(rumbleControllers(0.2, 0.2));
-			}
-		} catch (Exception e) {
-			// if each configuration is tested, this should not ever be reached
-			DriverStation.reportError("Cannot decode level!! (do all subsystems have all the congurations?)",
-					true);
-			return Commands.none();
+	private Command changeSubsystemStates(SubsystemStates state) {
+		// Handle the coral seperately to wait until the elevator has reached its state
+		// to pivot and eject. This prevents the coral from hitting the reef on the way
+		// up.
+		if (state.isCoral()) {
+			return Commands.sequence(
+					Commands.parallel(
+							elevator.moveElevatorCommand(state.elevatorHeight()),
+							algae.moveAlgaeCommand(state.algaeAngle())),
+					coral.moveCoralCommand(state.coralAngle()),
+					coral.ejectCoralCommand(),
+					changeSubsystemStates(SubsystemStates.CS));
+		} else {
+			// all the other positions just move all three subsystems at the same time
+			return Commands
+					.parallel(
+							elevator.moveElevatorCommand(state.elevatorHeight()),
+							algae.moveAlgaeCommand(state.algaeAngle()),
+							coral.moveCoralCommand(state.coralAngle()))
+					.andThen(rumbleControllers(0.2, 0.2));
 		}
 	}
 

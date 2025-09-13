@@ -25,13 +25,43 @@ import edu.wpi.first.units.measure.Time;
 
 public final class Constants {
 
+  /**
+   * Represents the three subsystem states for a desired robot state. Has static
+   * subsystem states for predetermined robot configuration.
+   */
+  public final record SubsystemStates(
+      Distance elevatorHeight, Angle coralAngle, Angle algaeAngle, boolean isCoral) {
+    /** Coral level one. 1st from the floor */
+    public static final SubsystemStates L1 = new SubsystemStates(
+        Inches.of(18.60), Degrees.of(-13.00), Degrees.of(85), true);
+    /** Coral level two. 2nd from the floor */
+    public static final SubsystemStates L2 = new SubsystemStates(
+        Inches.of(23.60), Degrees.of(-30.50), Degrees.of(85), true);
+    /** Coral level three. 3rd from the floor */
+    public static final SubsystemStates L3 = new SubsystemStates(
+        Inches.of(38.14), Degrees.of(-30.50), Degrees.of(85), true);
+    /** Coral level four. 4th from the floor */
+    public static final SubsystemStates L4 = new SubsystemStates(
+        Inches.of(64.10), Degrees.of(-46.75), Degrees.of(85), true);
+
+    /** Algae level one. 1st from the floor */
+    public static final SubsystemStates A1 = new SubsystemStates(
+        Inches.of(40.00), Degrees.of(50.00), Degrees.of(0), false);
+    /** Algae level two. 2nd from the floor */
+    public static final SubsystemStates A2 = new SubsystemStates(
+        Inches.of(54.70), Degrees.of(50.00), Degrees.of(0), false);
+
+    /** Coral station/Intaking */
+    public static final SubsystemStates CS = new SubsystemStates(
+        Inches.of(20.00), Degrees.of(50.00), Degrees.of(0), false);
+    /** Coral processor */
+    public static final SubsystemStates P = new SubsystemStates(
+        Inches.of(18.60), Degrees.of(30.50), Degrees.of(85), false);
+  }
+
   public final class ReefConstants {
     public static enum Side {
       AB, CD, EF, GH, IJ, KL
-    };
-
-    public static enum Level {
-      L1, L2, L3, L4, A1, A2, CS, P
     };
 
     public static final Translation2d reefPositionWS = new Translation2d(4.489, 4.0259);
@@ -117,14 +147,6 @@ public final class Constants {
     public static final int leftID = 14;
     public static final LinearVelocity MAX_VELOCITY = FeetPerSecond.of(14);
     public static final LinearAcceleration MAX_ACCELERATION = FeetPerSecondPerSecond.of(6);
-    public static final Distance L1 = Inches.of(18.6);
-    public static final Distance L2 = Inches.of(23.6);
-    public static final Distance L3 = Inches.of(38.14);
-    public static final Distance L4 = Inches.of(64.10);
-    public static final Distance A1 = Inches.of(40.0);
-    public static final Distance A2 = Inches.of(54.7);
-    public static final Distance P = Inches.of(20);
-    public static final Distance CS = Inches.of(18.6);
 
     public static final double GEAR_RATIO = 16.0;
     public static final int GEAR_TEETH_NUM = 22;
@@ -168,14 +190,6 @@ public final class Constants {
     public static final Angle LOWER_LIMIT = Degrees.of(-60);
     public static final double GEAR_RATIO = 16.0;
     public static final Angle STOWED = Degrees.of(50);
-    public static final Angle L1 = Degrees.of(-13.0);
-    public static final Angle L2 = Degrees.of(-30.5);
-    public static final Angle L3 = Degrees.of(-30.5);
-    public static final Angle L4 = Degrees.of(-46.75);
-    public static final Angle A1 = Degrees.of(50.0);
-    public static final Angle A2 = Degrees.of(50.0);
-    public static final Angle P = Degrees.of(50.0);
-    public static final Angle CS = Degrees.of(30.5);
   }
 
   public static class AlgaeConstants {
@@ -198,14 +212,6 @@ public final class Constants {
     public static final Angle ENCODER_OFFSET = Degrees.of(181.8);
     public static final AngularVelocity MAX_VELOCITY = DegreesPerSecond.of(720);
     public static final AngularAcceleration MAX_ACCELERATION = DegreesPerSecondPerSecond.of(540);
-    public static final Angle L1 = Degrees.of(85);
-    public static final Angle L2 = Degrees.of(85);
-    public static final Angle L3 = Degrees.of(85);
-    public static final Angle L4 = Degrees.of(85);
-    public static final Angle A1 = Degrees.of(0);
-    public static final Angle A2 = Degrees.of(0);
-    public static final Angle P = Degrees.of(0);
-    public static final Angle CS = Degrees.of(85);
   }
 
   public static class ClimbConstants {
