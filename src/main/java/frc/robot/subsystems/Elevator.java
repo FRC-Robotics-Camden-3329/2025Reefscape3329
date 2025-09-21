@@ -19,6 +19,7 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.MutDistance;
 import edu.wpi.first.units.measure.MutLinearVelocity;
 import edu.wpi.first.units.measure.MutVoltage;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -77,12 +78,12 @@ public class Elevator extends SubsystemBase {
         pid.setTolerance(Inches.of(2).in(Meters));
 
         rightMotorConfig
-                .smartCurrentLimit(40)
+                .smartCurrentLimit((int) ElevatorConstants.MOTOR_CURRENT_LIMIT.in(Amps))
                 .idleMode(IdleMode.kBrake)
                 .inverted(true);
         right.configure(rightMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftMotorConfig
-                .smartCurrentLimit(40)
+                .smartCurrentLimit((int) ElevatorConstants.MOTOR_CURRENT_LIMIT.in(Amps))
                 .idleMode(IdleMode.kBrake);
         left.configure(leftMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
@@ -92,6 +93,17 @@ public class Elevator extends SubsystemBase {
         // Diagnostic disable
         SmartDashboard.putBoolean("Elevator/Enabled", true);
         loopEnabled.and(RobotState::isEnabled).whileTrue(updateElevatorControl());
+
+        // Automatically disable the PID if the current is too high for too long. Also
+        // sets the target height to be at the floor so it doesn't jolt back up if
+        // manually reenabled.
+        new Trigger(() -> left.getOutputCurrent() >= (ElevatorConstants.MOTOR_CURRENT_LIMIT.in(Amps) - 1.0))
+                .debounce(1.0) // should be tuned to not cause any false positives during normal operation
+                .onTrue(Commands.runOnce(() -> {
+                    SmartDashboard.putBoolean("Elevator/Enabled", false);
+                    setTargetHeight(ElevatorConstants.FLOOR_OFFSET);
+                    DriverStation.reportError("Elevator PID disabled due to excessive current draw!!", false);
+                }));
 
         // tuning
         Preferences.initDouble("Elevator/Kg", 0);
