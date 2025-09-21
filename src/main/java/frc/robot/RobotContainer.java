@@ -17,8 +17,10 @@ import java.util.Optional;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -33,7 +35,7 @@ public class RobotContainer {
 	private final SendableChooser<Command> autoChooser;
 
 	private final SwerveSubsystem drivebase = new SwerveSubsystem();
-	private final QuestNavSubsystem questNav = new QuestNavSubsystem(drivebase::addVisionMeasurement);
+	private final QuestNavSubsystem questNav = new QuestNavSubsystem(drivebase::addVisionMeasurement, true);
 	private final PhotonVisionSubsystem photonVision = new PhotonVisionSubsystem(
 			drivebase::addVisionMeasurement, false);
 	private final GamePieceDetector gamePieceDetector = new GamePieceDetector(
@@ -61,6 +63,20 @@ public class RobotContainer {
 		new Trigger(RobotState::isTeleop).and(new Trigger(DriverStation::isFMSAttached).negate())
 				.onTrue(autoDriving(
 						Commands.runOnce(() -> photonVision.getPoseOptional().ifPresent(pose -> resetOdometry(pose)))));
+
+		/*
+		 * In the event that QN stops tracking, failover to PV for updating our global
+		 * robot pose. This will be accurate but require a tag in sight so it may
+		 * become inaccurate if the robot cannot see any tags.
+		 */
+		new Trigger(questNav::isTracking).debounce(0.5, DebounceType.kFalling)
+				.onFalse(Commands.runOnce(() -> {
+					DriverStation.reportError(
+							"QuestNav tracking lost!! Failing over to PhotonVision...",
+							false);
+					questNav.setUseEstConsumer(false);
+					photonVision.setUseEsimationConsumer(true);
+				}));
 
 		// Configure commands for PathPlanner.
 		// Autons created in PathPlanner must not reset the position of the robot
@@ -184,6 +200,18 @@ public class RobotContainer {
 		SmartDashboard.putData("Level 2", changeSubsystemStates(SubsystemStates.L2));
 		SmartDashboard.putData("Level 3", changeSubsystemStates(SubsystemStates.L3));
 		SmartDashboard.putData("Level 4", changeSubsystemStates(SubsystemStates.L4));
+
+		// Add button to the dashboard to reset QN's position with PV
+		SmartDashboard.putData("Reset Quest Position From PhotonVision", Commands.runOnce(() -> {
+			DataLogManager.log("Attempting to reset QN to PV pose...");
+
+			photonVision.getPoseOptional().ifPresent(pose -> {
+				photonVision.setUseEsimationConsumer(false);
+				questNav.setQuestPose(pose);
+				questNav.setUseEstConsumer(true);
+				DataLogManager.log("QN pose successfully set from PV!");
+			});
+		}));
 	}
 
 	/**

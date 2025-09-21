@@ -37,7 +37,6 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 	private final PhotonCamera camera;
 	private final PhotonPoseEstimator photonEstimator;
 	private final EstimateConsumer estConsumer;
-	private final boolean useEstConsumer;
 	private final MedianFilter xFilter;
 	private final MedianFilter yFilter;
 	private final MedianFilter thetaFilter;
@@ -51,6 +50,7 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 
 	private Matrix<N3, N1> curStdDevs;
 	private Pose2d lastUpdatedPose;
+	private boolean useEstConsumer;
 
 	/**
 	 * Creates a new PhotonVisionSubsystem.
@@ -81,6 +81,15 @@ public class PhotonVisionSubsystem extends SubsystemBase {
 		photonEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
 
 		lastUpdatedPose = new Pose2d(1, 1, Rotation2d.kZero);
+	}
+
+	/**
+	 * Sets whether the PhotonVision subsystem should be using the estimation
+	 * consumer provided in the constructor. If true, then this will update the
+	 * robot's position based on PhotonVision's pose estimation.
+	 */
+	public void setUseEsimationConsumer(boolean useEstConsumer) {
+		this.useEstConsumer = useEstConsumer;
 	}
 
 	/**
