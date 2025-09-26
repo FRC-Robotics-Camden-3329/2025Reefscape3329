@@ -29,10 +29,10 @@ public class Climb extends SubsystemBase {
     }
 
     public Command climbCommand() {
-        return this.runEnd(() -> this.run(Constants.CoralConstants.intakeSpeed), () -> this.run(0));
+        return this.runEnd(() -> this.run(Constants.CoralIntakeConstants.INTAKE_SPEED), () -> this.run(0));
     }
 
     public Command reachCommand() {
-        return this.runEnd(() -> this.run(-Constants.CoralConstants.intakeSpeed), () -> this.run(0));
+        return this.runEnd(() -> this.run(-Constants.CoralIntakeConstants.INTAKE_SPEED), () -> this.run(0));
     }
 }
