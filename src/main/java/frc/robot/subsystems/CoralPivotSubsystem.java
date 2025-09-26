@@ -39,21 +39,20 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.CoralPivotConstants;
 
 public class CoralPivotSubsystem extends SubsystemBase {
-    private ProfiledPIDController pid;
-    private SparkMax motor;
-    private SparkMaxConfig motorConfig;
-    private DutyCycleEncoder encoder;
-    private Trigger coralPIDEnabled;
-    private MutAngle coralAngle;
-    private ArmFeedforward coralFeedforward;
-    private double coralSetpoint;
+    private final ProfiledPIDController pid;
+    private final SparkMax motor;
+    private final SparkMaxConfig motorConfig;
+    private final DutyCycleEncoder encoder;
+    private final Trigger coralPIDEnabled;
+    private final MutAngle coralAngle;
+    private final ArmFeedforward coralFeedforward;
 
     // required for characterization
-    private MutVoltage voltsDrawn = Volts.mutable(0);
-    private MutAngularVelocity angularVelocity = RPM.mutable(0);
-    private RelativeEncoder pivotEncoder;
+    private final MutVoltage voltsDrawn = Volts.mutable(0);
+    private final MutAngularVelocity angularVelocity = RPM.mutable(0);
+    private final RelativeEncoder pivotEncoder;
 
-    private SysIdRoutine sysIdRoutine;
+    private final SysIdRoutine sysIdRoutine;
 
     public CoralPivotSubsystem() {
         pid = new ProfiledPIDController(CoralPivotConstants.kP, CoralPivotConstants.kI, CoralPivotConstants.kD,
@@ -181,7 +180,7 @@ public class CoralPivotSubsystem extends SubsystemBase {
     private Command updatePref() {
         return Commands.runOnce(
                 () -> setGoal(
-                        Degrees.of(Preferences.getDouble("CoralPivot/Target Pref Degrees", coralSetpoint))));
+                        Degrees.of(Preferences.getDouble("CoralPivot/Target Pref Degrees", 0.0))));
     }
 
     /**

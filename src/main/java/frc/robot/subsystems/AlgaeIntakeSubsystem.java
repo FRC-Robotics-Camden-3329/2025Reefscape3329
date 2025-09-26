@@ -13,9 +13,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.AlgaeIntakeConstants;
 
 public class AlgaeIntakeSubsystem extends SubsystemBase {
-    private SparkMax motor;
-    private SparkMaxConfig motorConfig;
-    private Trigger algaeDetected;
+    private final SparkMax motor;
+    private final SparkMaxConfig motorConfig;
+    private final Trigger algaeDetected;
 
     public AlgaeIntakeSubsystem() {
         motor = new SparkMax(AlgaeIntakeConstants.MOTOR_ID, MotorType.kBrushed);

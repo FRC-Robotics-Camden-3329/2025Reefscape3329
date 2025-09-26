@@ -30,17 +30,19 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.AlgaePivotConstants;
 
 public class AlgaePivotSubsystem extends SubsystemBase {
-    private SparkMax motor;
-    private RelativeEncoder pivotEncoder;
-    private SparkMaxConfig motorConfig;
-    private ProfiledPIDController pid;
-    private ArmFeedforward feedforward;
-    private DutyCycleEncoder encoder;
-    private MutAngle algaeAngle;
-    private Trigger loopEnabled;
-    private SysIdRoutine sysIdRoutine;
-    private MutAngularVelocity angularVelocity = DegreesPerSecond.mutable(0);
-    private MutVoltage voltsDrawn = Volts.mutable(0);
+    private final SparkMax motor;
+    private final SparkMaxConfig motorConfig;
+    private final ProfiledPIDController pid;
+    private final ArmFeedforward feedforward;
+    private final DutyCycleEncoder encoder;
+    private final MutAngle algaeAngle;
+    private final Trigger loopEnabled;
+
+    // sysid specific variables
+    private final RelativeEncoder pivotEncoder;
+    private final SysIdRoutine sysIdRoutine;
+    private final MutAngularVelocity angularVelocity = DegreesPerSecond.mutable(0);
+    private final MutVoltage voltsDrawn = Volts.mutable(0);
 
     public AlgaePivotSubsystem() {
         pid = new ProfiledPIDController(AlgaePivotConstants.kP,
@@ -56,7 +58,7 @@ public class AlgaePivotSubsystem extends SubsystemBase {
         loopEnabled = new Trigger(() -> SmartDashboard.getBoolean("AlgaePivot/Enabled", true));
         algaeAngle = Degrees.mutable(0);
 
-        setTarget(Degrees.of(85));
+        setGoal(Degrees.of(85));
         pid.setTolerance(Degrees.of(4).in(Radians));
 
         // configure sparkmaxes
@@ -121,7 +123,7 @@ public class AlgaePivotSubsystem extends SubsystemBase {
      */
     public Command moveAlgaeCommand(Angle angle) {
         return this
-                .runOnce(() -> this.setTarget(angle))
+                .runOnce(() -> this.setGoal(angle))
                 .andThen(Commands.waitUntil(this::isAtPosition))
                 .andThen(Commands.waitSeconds(0.1)).withName("AlgaeMoving");
     }
@@ -131,7 +133,7 @@ public class AlgaePivotSubsystem extends SubsystemBase {
      * 
      * @param angle the target angle
      */
-    private void setTarget(Angle angle) {
+    private void setGoal(Angle angle) {
         SmartDashboard.putNumber("AlgaePivot/Target", angle.in(Degrees));
         pid.setGoal(angle.in(Radians));
     }
@@ -152,7 +154,7 @@ public class AlgaePivotSubsystem extends SubsystemBase {
      */
     private Command updateTargetPreference() {
         return this.runOnce(
-                () -> setTarget(Degrees.of(Preferences.getDouble("AlgaePivot/Target Pref Degrees", 0.0))));
+                () -> setGoal(Degrees.of(Preferences.getDouble("AlgaePivot/Target Pref Degrees", 0.0))));
     }
 
     /**

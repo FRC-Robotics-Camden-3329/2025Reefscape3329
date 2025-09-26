@@ -13,9 +13,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.CoralIntakeConstants;
 
 public class CoralIntakeSubsystem extends SubsystemBase {
-    private SparkMax motor;
-    private SparkMaxConfig intakeConfig;
-    private Trigger coralDetected;
+    private final SparkMax motor;
+    private final SparkMaxConfig intakeConfig;
+    private final Trigger coralDetected;
 
     public CoralIntakeSubsystem() {
         motor = new SparkMax(CoralIntakeConstants.MOTOR_ID, MotorType.kBrushless);
