@@ -18,6 +18,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
@@ -158,6 +159,8 @@ public final class Constants {
     public static final Distance FLOOR_OFFSET = Inches.of(18.6);
     public static final Distance SPROCKET_PITCH_DIAMETER = Inches.of(1.9);
     public static final Distance CONVERSION_FACTOR = SPROCKET_PITCH_DIAMETER.times(Math.PI * NUM_STAGES / GEAR_RATIO);
+
+    public static final Current MOTOR_CURRENT_LIMIT = Amps.of(40.0);
 
     // control loop parameters
     // feedback constants

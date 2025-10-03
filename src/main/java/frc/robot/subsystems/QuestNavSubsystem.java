@@ -26,11 +26,30 @@ public class QuestNavSubsystem extends SubsystemBase {
 	private final StructPublisher<Pose2d> worldPosePublisher = NetworkTableInstance.getDefault()
 			.getStructTopic("QuestNav/WorldPose", Pose2d.struct).publish();
 	private Optional<Pose2d> questWorldPose = Optional.empty();
+	private boolean useEstConsumer;
 
 	/** Creates a new QuestNavSubsystem. */
-	public QuestNavSubsystem(EstimateConsumer estimateConsumer) {
+	public QuestNavSubsystem(EstimateConsumer estimateConsumer, boolean useEstConsumer) {
 		this.estConsumer = estimateConsumer;
+		this.useEstConsumer = useEstConsumer;
 		disconnectedAlert = new Alert("QuestNav Not Tracking!!", AlertType.kWarning);
+	}
+
+	/**
+	 * Sets whether the QuestNav subsystem should be using the estimation
+	 * consumer provided in the constructor. If true, then this will update the
+	 * robot's position based on QuestNav's pose estimation.
+	 */
+	public void setUseEstConsumer(boolean useEstConsumer) {
+		this.useEstConsumer = useEstConsumer;
+	}
+
+	/**
+	 * @return whether questnav is currently tracking. Note this is different from
+	 *         being connected.
+	 */
+	public boolean isTracking() {
+		return questNav.isTracking();
 	}
 
 	/**
@@ -131,7 +150,9 @@ public class QuestNavSubsystem extends SubsystemBase {
 				worldPosePublisher.accept(robotPose);
 
 				// Add the measurement to the estimator
-				estConsumer.accept(robotPose, timestamp, QuestConstants.QUESTNAV_STD_DEVS);
+				if (useEstConsumer) {
+					estConsumer.accept(robotPose, timestamp, QuestConstants.QUESTNAV_STD_DEVS);
+				}
 			}
 
 		} else {
