@@ -57,13 +57,9 @@ public class SwerveSubsystem extends SubsystemBase {
 	 *                           drivebase.
 	 */
 	public SwerveSubsystem() {
-		// Optionally allow for a set maxSpeed to be defined in smartDashboard, default to Consants.maxSpeed
-        double maxSpeed = SmartDashboard.getNumber("Drive speed (ft)", Constants.maxSpeed);
-        SmartDashboard.putNumber("Drive speed (ft)", maxSpeed);
-
 		// Initalize swerve drives
 		try {
-			swerveDrive = new SwerveParser(directory).createSwerveDrive(maxSpeed,
+			swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.maxSpeed,
 					new Pose2d(new Translation2d(Meter.of(0), Meter.of(0)), Rotation2d.fromDegrees(0)));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
