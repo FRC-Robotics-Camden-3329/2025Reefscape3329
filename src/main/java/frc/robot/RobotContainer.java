@@ -2,7 +2,7 @@ package frc.robot;
 
 import frc.robot.Constants.ReefConstants;
 import frc.robot.Constants.SubsystemStates;
-import frc.robot.Constants.CoralConstants;
+import frc.robot.Constants.CoralPivotConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AutoDriveToReefCommand;
 import frc.robot.commands.AutoDriveToGamePieceCommand;
@@ -42,8 +42,10 @@ public class RobotContainer {
 			() -> drivebase.getSwerveDrive().getPose(), drivebase.getSwerveDrive().field);
 
 	private final Elevator elevator = new Elevator();
-	private final Coral coral = new Coral();
-	private final Algae algae = new Algae();
+	private final CoralPivotSubsystem coralPivot = new CoralPivotSubsystem();
+	private final AlgaePivotSubsystem algaePivot = new AlgaePivotSubsystem();
+	private final CoralIntakeSubsystem coralIntake = new CoralIntakeSubsystem();
+	private final AlgaeIntakeSubsystem algaeIntake = new AlgaeIntakeSubsystem();
 	// private Climb m_Climb = new Climb();
 
 	public final CommandXboxController m_driverController = new CommandXboxController(
@@ -86,10 +88,10 @@ public class RobotContainer {
 		NamedCommands.registerCommand("L4Config", changeSubsystemStates(SubsystemStates.L4));
 		NamedCommands.registerCommand("A1Config", changeSubsystemStates(SubsystemStates.A1));
 		NamedCommands.registerCommand("CSConfig", changeSubsystemStates(SubsystemStates.CS));
-		NamedCommands.registerCommand("IntakeCoral", coral.intakeCoralCommand());
-		NamedCommands.registerCommand("EjectCoral", coral.ejectCoralCommand());
-		NamedCommands.registerCommand("IntakeAlgae", coral.intakeCoralCommand());
-		NamedCommands.registerCommand("EjectAlgae", coral.ejectCoralCommand());
+		NamedCommands.registerCommand("IntakeCoral", coralIntake.intakeCoralCommand());
+		NamedCommands.registerCommand("EjectCoral", coralIntake.ejectCoralCommand());
+		NamedCommands.registerCommand("IntakeAlgae", algaeIntake.intakeAlgaeCommand());
+		NamedCommands.registerCommand("EjectAlgae", algaeIntake.ejectAlgaeCommand());
 
 		setMotorBrake(false);
 		drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
@@ -99,8 +101,9 @@ public class RobotContainer {
 		autoChooser.setDefaultOption("None", null);
 		configureBindings();
 
-		coral.getCoralDetected().onTrue(rumbleControllers(0.8, 0.5));
-		algae.getAlgaeDetected().onTrue(rumbleControllers(0.8, 0.5));
+		// Rumble the controllers whenever we pickup a game piece
+		coralIntake.getCoralDetected().onTrue(rumbleControllers(0.8, 0.5));
+		algaeIntake.getAlgaeDetected().onTrue(rumbleControllers(0.8, 0.5));
 	}
 
 	/**
@@ -156,19 +159,19 @@ public class RobotContainer {
 
 		// intake coral
 		m_operatorController.leftBumper()
-				.whileTrue(coral.intakeCoralCommand()
-						.andThen(coral.moveCoralCommand(CoralConstants.STOWED)));
+				.whileTrue(coralIntake.intakeCoralCommand()
+						.andThen(coralPivot.moveCoralCommand(CoralPivotConstants.STOWED)));
 		// eject coral
 		m_operatorController.rightBumper()
-				.onTrue(coral.ejectCoralCommand()
-						.andThen(coral.moveCoralCommand(CoralConstants.STOWED)));
-		m_operatorController.back().onTrue(coral.ejectCoralSlowCommand());
+				.onTrue(coralIntake.ejectCoralCommand()
+						.andThen(coralPivot.moveCoralCommand(CoralPivotConstants.STOWED)));
+		m_operatorController.back().onTrue(coralIntake.ejectCoralSlowCommand());
 		// intake algae
 		m_operatorController.leftTrigger()
-				.whileTrue(algae.intakeAlgaeCommand()
-						.andThen(algae.moveAlgaeCommand(Degrees.of(50.0))));
+				.whileTrue(algaeIntake.intakeAlgaeCommand()
+						.andThen(algaePivot.moveAlgaeCommand(Degrees.of(50.0))));
 		// eject algae
-		m_operatorController.rightTrigger().onTrue(algae.ejectAlgaeCommand());
+		m_operatorController.rightTrigger().onTrue(algaeIntake.ejectAlgaeCommand());
 
 		// m_driverController.leftBumper().whileTrue(drivebase.getAngleCharacterizationCommand());
 		// m_driverController.rightBumper().whileTrue(drivebase.getDriveCharacterizationCommand());
@@ -230,17 +233,17 @@ public class RobotContainer {
 			return Commands.sequence(
 					Commands.parallel(
 							elevator.moveElevatorCommand(state.elevatorHeight()),
-							algae.moveAlgaeCommand(state.algaeAngle())),
-					coral.moveCoralCommand(state.coralAngle()),
-					coral.ejectCoralCommand(),
+							algaePivot.moveAlgaeCommand(state.algaeAngle())),
+					coralPivot.moveCoralCommand(state.coralAngle()),
+					coralIntake.ejectCoralCommand(),
 					changeSubsystemStates(SubsystemStates.CS));
 		} else {
 			// all the other positions just move all three subsystems at the same time
 			return Commands
 					.parallel(
 							elevator.moveElevatorCommand(state.elevatorHeight()),
-							algae.moveAlgaeCommand(state.algaeAngle()),
-							coral.moveCoralCommand(state.coralAngle()))
+							algaePivot.moveAlgaeCommand(state.algaeAngle()),
+							coralPivot.moveCoralCommand(state.coralAngle()))
 					.andThen(rumbleControllers(0.2, 0.2));
 		}
 	}

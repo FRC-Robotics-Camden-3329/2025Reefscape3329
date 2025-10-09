@@ -2,6 +2,8 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
@@ -174,13 +176,15 @@ public final class Constants {
     public static final double Kg = 0.76811;
   }
 
-  public static class CoralConstants {
-    public static final int pivotID = 15;
-    public static final int intakeID = 16;
-    public static final int encoderID = 0;
+  public static class CoralPivotConstants {
+    public static final int MOTOR_ID = 15;
+    public static final boolean INVERTED = true;
+    public static final IdleMode IDLE_MODE = IdleMode.kBrake;
+    public static final int CURRENT_LIMIT = 40; // amps
+
+    public static final int ENCODER_ID = 0;
     public static final Angle ENCODER_OFFSET = Degrees.of(80);
-    public static final double intakeSpeed = 0.3;
-    public static final double ejectSpeed = 0.3;
+
     // feedforward constants
     public static final double Ks = 0.0;
     public static final double Kv = 0.0;
@@ -198,13 +202,29 @@ public final class Constants {
     public static final Angle STOWED = Degrees.of(50);
   }
 
-  public static class AlgaeConstants {
-    public static final int pivotID = 17;
-    public static final int intakeID = 18;
-    public static final int encoderID = 1;
-    public static final double INTAKE_SPEED = 0.8;
-    public static final double EJECT_SPEED = 0.8;
-    public static final double HOLD_SPEED = 0.10;
+  public static class CoralIntakeConstants {
+    public static final int MOTOR_ID = 16;
+    public static final boolean INVERTED = true;
+    public static final IdleMode IDLE_MODE = IdleMode.kBrake;
+
+    public static final int CURRENT_LIMIT = 20; // amps
+    public static final double CURRENT_DEBOUNCE_S = 0.15; // used for detecting coral intake
+
+    public static final double INTAKE_SPEED = 0.3;
+    public static final double EJECT_SPEED = 0.3;
+    public static final Time EJECT_TIME = Seconds.of(0.5);
+    public static final double HOLD_SPEED = 0.05;
+  }
+
+  public static class AlgaePivotConstants {
+    public static final int PIVOT_ID = 17;
+    public static final boolean INVERTED = true;
+    public static final IdleMode IDLE_MODE = IdleMode.kBrake;
+    public static final int CURRENT_LIMIT = 40;
+
+    public static final int ENCODER_ID = 1;
+    public static final Angle ENCODER_OFFSET = Degrees.of(181.8);
+
     // feedforward constants
     public static final double Ks = 0;
     public static final double Kg = 1.0;
@@ -215,9 +235,22 @@ public final class Constants {
     public static final double kI = 0;
     public static final double kD = 0.4;
     public static final double GEAR_RATIO = 16.0;
-    public static final Angle ENCODER_OFFSET = Degrees.of(181.8);
     public static final AngularVelocity MAX_VELOCITY = DegreesPerSecond.of(720);
     public static final AngularAcceleration MAX_ACCELERATION = DegreesPerSecondPerSecond.of(540);
+  }
+
+  public static class AlgaeIntakeConstants {
+    public static final int MOTOR_ID = 18;
+    public static final boolean INVERTED = false;
+    public static final IdleMode IDLE_MODE = IdleMode.kBrake;
+
+    public static final int CURRENT_LIMIT = 20; // amps
+    public static final double CURRENT_DEBOUNCE_S = 0.8; // used for detecting algae intake
+
+    public static final double INTAKE_SPEED = 0.8;
+    public static final double EJECT_SPEED = 0.8;
+    public static final Time EJECT_TIME = Seconds.of(0.5);
+    public static final double HOLD_SPEED = 0.10;
   }
 
   public static class ClimbConstants {
